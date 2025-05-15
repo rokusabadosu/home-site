@@ -1,18 +1,23 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 2rem;
-  background-color: #f0f0f0;
-  color: #333;
-}
-
-h1 {
-  color: #007acc;
-}
-
-img {
-  max-width: 100%;
-  height: auto;
-  margin-top: 1rem;
-  border: 2px solid #007acc;
-  border-radius: 8px;
-}
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: #ffffff;
+      font-family: sans-serif;
+    }
+    h1 {
+      font-size: 48px;
+      margin: 0 0 20px;
+    }
+    .center-text {
+      font-size: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    img {
+      max-width: 300px;
+      height: auto;
+    }

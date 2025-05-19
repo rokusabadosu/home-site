@@ -7,6 +7,7 @@
       align-items: center;
       background-color: #ffffff;
       font-family: sans-serif;
+      background: url("images/rokusaba.png") center/cover no-repeat;
     }
     h1 {
       font-size: 40px;

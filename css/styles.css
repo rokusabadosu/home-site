@@ -17,9 +17,11 @@
       font-size: 40px;
       margin: 0 0 20px;
     }
-    .center-text {
+    h3 {
+      font-weight: bold;
+    }
+    .sub-title {
       font-size: 24px;
-      text-align: center;
       margin-bottom: 20px;
     }
     img {

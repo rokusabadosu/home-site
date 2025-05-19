@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Grid Map</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+        #gameCanvas {
+            background-color: #3b82f6; /* Changed to blue, same as lakes */
+            display: block; /* Removes extra space below canvas */
+            width: 100vw;
+            height: 100vh;
+            cursor: grab; /* Show a grab cursor */
+        }
+        #gameCanvas:active {
+            cursor: grabbing; /* Show a grabbing cursor when dragging */
+        }
+        #foodCounter {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 20px;
+            z-index: 10; /* Ensure it's above the canvas */
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.7); /* Optional background for better visibility */
+            border-radius: 5px;
+        }
+        #goldCounter {
+            position: absolute;
+            top: 40px; /* Positioned below foodCounter */
+            left: 10px;
+            color: white;
+            font-size: 20px;
+            z-index: 10;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
+        }
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none; /* Initially hidden */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 11; /* Sit on top of everything */
+            color: white;
+            font-size: 24px;
+        }
+        #gameOverScreen h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        #gameOverScreen button {
+            background-color: #4CAF50; /* Green */
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: background-color 0.3s ease;
+        }
+        #gameOverScreen button:hover {
+            background-color: #367c39; /* Darker green */
+        }
+        #messageDisplay {
+            position: absolute;
+            top: 40px; /* Changed top to 40px to position it below foodCounter */
+            left: 10px; /* Align with foodCounter */
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 18px;
+            z-index: 12;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .show-message {
+            opacity: 1;
+        }
+        .hide-message {
+            opacity: 0;
+        }
+    </style>
+    <style>
+        /* Custom CSS for the Game */
+        #gameCanvas {
+            background-color: #3b82f6; /* Light gray background */
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 overflow-hidden">
+    <canvas id="gameCanvas"></canvas>
+    <div id="foodCounter">Food: 100</div>
+    <div id="goldCounter">Gold: 0</div>
+    <div id="gameOverScreen">
+        <h2>Game Over</h2>
+        <p id="gameOverReason">You have run out of food!</p>
+        <button id="restartButton">Restart</button>
+    </div>
+    <div id="messageDisplay" class="hide-message"></div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let gridSize = 30; // Size of each grid cell - increased to make grid bigger
+        let playerX, playerY; // Player position in grid coordinates
+        let mapWidth = 50; // Map size in grid cells - changed to 50
+        let mapHeight = 50; // Map size in grid cells - changed to 50
+        let mapData; // 2D array representing the map
+        let townNames = {}; // Store town names with their coordinates as keys
+
+        let viewOffsetX = 0; // Offset for panning the map
+        let viewOffsetY = 0;
+        let isDragging = false;
+        let dragStartX, dragStartY;
+        let zoomLevel = 1; // Initial zoom level
+        const zoomSpeed = 0.1; // Speed of zooming
+        const minZoom = 0.5;
+        const maxZoom = 3;
+
+        let foodCount = 30; // Initial food count - changed to 30
+        let goldCount = 10; // Initial gold count - set to 10
+        const foodCounterDisplay = document.getElementById('foodCounter');
+        const goldCounterDisplay = document.getElementById('goldCounter');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const restartButton = document.getElementById('restartButton');
+        const gameOverReason = document.getElementById('gameOverReason');
+        const messageDisplay = document.getElementById('messageDisplay');
+        let messageTimeout;
+
+        function updateFoodCounter() {
+            foodCounterDisplay.textContent = `Food: ${foodCount}`;
+        }
+
+        function updateGoldCounter() {
+            goldCounterDisplay.textContent = `Gold: ${goldCount}`;
+        }
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            generateMap(); // Regenerate map on resize to fit new dimensions
+            initializePlayer(); // Reset player position on map regeneration
+            drawMap();
+        }
+
+        function generateMap() {
+            mapData = [];
+            townNames = {}; // Clear town names each time the map is generated
+            let generatedTownNames = new Set(); // To ensure unique names
+            let townCoordinates = []; // Array to store coordinates of towns
+
+            for (let y = 0; y < mapHeight; y++) {
+                mapData[y] = [];
+                for (let x = 0; x < mapWidth; x++) {
+                    // Start with open space
+                    mapData[y][x] = 0;
+
+                    // Randomly place mountains (1), forests (2), lakes (3), towns (4) and swamps (5)
+                    const randomValue = Math.random();
+                    if (randomValue < 0.1) { // 10% chance
+                        mapData[y][x] = 1; // Mountain
+                    } else if (randomValue < 0.3) { // 20% chance (cumulative, so 30% total)
+                        mapData[y][x] = 2; // Forest
+                    } else if (randomValue < 0.4) { // 10% chance (cumulative, so 40% total)
+                         mapData[y][x] = 3; // Lake
+                    } else if (randomValue < 0.41) { // 1% chance for towns (cumulative, so 41% total)
+                        mapData[y][x] = 4; // Town
+                    } else if (randomValue < 0.5) { // 9% chance for swamps (cumulative, so 50% total)
+                        mapData[y][x] = 5; // Swamp
+                    }
+                    //  else { // implied
+                    //      mapData[y][x] = 0; // Open space
+                    //  }
+                }
+            }
+
+            //second pass to add more features near existing ones
+            //towns do not get expanded
+            for (let y = 0; y < mapHeight; y++) {
+                for (let x = 0; x < mapWidth; x++) {
+                    if (mapData[y][x] === 0) { //only apply to open spaces
+                        let neighbors = [];
+                        if (y > 0) neighbors.push(mapData[y-1][x]);
+                        if (y < mapHeight - 1) neighbors.push(mapData[y+1][x]);
+                        if (x > 0) neighbors.push(mapData[y][x-1]);
+                        if (x < mapWidth - 1) neighbors.push(mapData[y][x+1]);
+
+                        let mountainCount = neighbors.filter(n => n === 1).length;
+                        let forestCount = neighbors.filter(n => n === 2).length;
+                        let lakeCount = neighbors.filter(n => n === 3).length;
+                        let swampCount = neighbors.filter(n => n === 5).length;
+
+                        if (mountainCount > 1) mapData[y][x] = 1; //more mountains
+                        else if (forestCount > 1) mapData[y][x] = 2; //more forests
+                        else if (lakeCount > 1) mapData[y][x] = 3; //more lakes
+                        else if (swampCount > 1) mapData[y][x] = 5; //more swamps
+                    }
+                }
+            }
+
+            // Generate names for towns
+            for (let y = 0; y < mapHeight; y++) {
+                for (let x = 0; x < mapWidth; x++) {
+                    if (mapData[y][x] === 4) {
+                        let townName;
+                        do {
+                            townName = generateTownName();
+                        } while (generatedTownNames.has(townName)); // Ensure uniqueness
+                        generatedTownNames.add(townName);
+                        townNames[`${x},${y}`] = townName; // Store name with coordinates
+                        townCoordinates.push({ x: x, y: y }); // Store town coordinates
+                    }
+                }
+            }
+
+            // Generate road between two random towns
+            if (townCoordinates.length >= 2) {
+                const town1Index = Math.floor(Math.random() * townCoordinates.length);
+                let town2Index;
+                do {
+                    town2Index = Math.floor(Math.random() * townCoordinates.length);
+                } while (town2Index === town1Index); // Ensure different towns
+
+                const town1 = townCoordinates[town1Index];
+                const town2 = townCoordinates[town2Index];
+                generateRoad(town1.x, town1.y, town2.x, town2.y);
+            }
+
+        }
+
+        function initializePlayer() {
+            // Find a random empty spot to place the player
+            let startX, startY;
+            let playerPlaced = false; // Keep track if player is successfully placed
+            let openSpaces = [];
+
+            // Collect all empty spaces
+            for (let y = 0; y < mapHeight; y++) {
+                for (let x = 0; x < mapWidth; x++) {
+                    if (mapData[y][x] === 0) {
+                        openSpaces.push({ x: x, y: y });
+                    }
+                }
+            }
+
+            if (openSpaces.length > 0) {
+                // Choose a random open space
+                const randomIndex = Math.floor(Math.random() * openSpaces.length);
+                playerX = openSpaces[randomIndex].x;
+                playerY = openSpaces[randomIndex].y;
+                playerPlaced = true;
+            }
+
+            if (!playerPlaced) {
+                // If no open space found, place player at 0,0 ( крайний случай )
+                playerX = 0;
+                playerY = 0;
+                console.warn("No open space found for player, placing at 0,0");
+            }
+            //calculate the offset to center the map on the player
+            viewOffsetX = playerX * gridSize - canvas.width / (2 * zoomLevel);
+            viewOffsetY = playerY * gridSize - canvas.height / (2 * zoomLevel);
+
+        }
+
+        const townNameParts = [
+            ["River", "Brook", "Creek", "Lake", "Falls", "Spring"],
+            ["Wood", "Forest", "Grove", "Meadow", "Hill", "Mountain"],
+            ["Town", "City", "Village", "Hamlet", "Burg", "Fort"],
+            ["North", "South", "East", "West", "Old", "New"],
+            ["Upper", "Lower", "Great", "Little", "High", "Low"]
+        ];
+
+        function generateTownName() {
+            const numParts = Math.floor(Math.random() * 2) + 2; // 2 to 3 parts
+            let name = "";
+            for (let i = 0; i < numParts; i++) {
+                const partIndex = Math.floor(Math.random() * townNameParts[i].length);
+                name += townNameParts[i][partIndex];
+                if (i < numParts - 1) {
+                    name += ""; //space
+                }
+            }
+            return name;
+        }
+
+        function generateRoad(startX, startY, endX, endY) {
+            let currentX = startX;
+            let currentY = startY;
+            const dx = Math.abs(endX - startX);
+            const dy = Math.abs(endY - startY);
+            const xDir = (endX > startX) ? 1 : -1;
+            const yDir = (endY > startY) ? 1 : -1;
+
+            let error = dx - dy;
+            let xStep = 0;
+            let yStep = 0;
+
+            while (currentX !== endX || currentY !== endY) {
+                //set road value to 6, but only if it's not a town
+                if (mapData[currentY][currentX] !== 4) {
+                    mapData[currentY][currentX] = 6;
+                }
+                const doubleError = error * 2;
+
+                if (doubleError > -dy) {
+                    error -= dy;
+                    currentX += xDir;
+                    xStep++;
+                } else if (doubleError < dx) {
+                    error += dx;
+                    currentY += yDir;
+                    yStep++;
+                }
+            }
+            //set end point, but only if it is not a town
+            if(mapData[currentY][currentX] !== 4){
+                mapData[currentY][currentX] = 6;
+            }
+        }
+
+        function drawMap() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.scale(zoomLevel, zoomLevel);
+
+            const visibleStartX = Math.floor(viewOffsetX / gridSize / zoomLevel);
+            const visibleStartY = Math.floor(viewOffsetY / gridSize / zoomLevel);
+            const visibleEndX = Math.ceil((viewOffsetX + canvas.width) / gridSize / zoomLevel);
+            const visibleEndY = Math.ceil((viewOffsetY + canvas.height) / gridSize / zoomLevel);
+
+            // Draw the map tiles
+            for (let y = Math.max(0, visibleStartY); y < Math.min(mapHeight, visibleEndY); y++) {
+                for (let x = Math.max(0, visibleStartX); x < Math.min(mapWidth, visibleEndX); x++) {
+                    switch (mapData[y][x]) {
+                        case 1:
+                            ctx.fillStyle = '#808080'; // Grey for mountains
+                            break;
+                        case 2:
+                            ctx.fillStyle = '#228B22'; // Darker richer green
+                            break;
+                        case 3:
+                            ctx.fillStyle = '#3b82f6'; // Blue for lakes
+                            break;
+                        case 4:
+                            ctx.fillStyle = '#ffff00'; // Yellow for towns
+                            break;
+                        case 5:
+                            ctx.fillStyle = '#698339';  // Murky green for swamps
+                            break;
+                        case 6:
+                            ctx.fillStyle = '#b89c7d'; // Road color
+                            break;
+                        case 0:
+                        default:
+                            ctx.fillStyle = '#86ef7d'; // Grass green for open space
+                            break;
+                    }
+                    ctx.fillRect(
+                        x * gridSize - viewOffsetX/zoomLevel,
+                        y * gridSize - viewOffsetY/zoomLevel,
+                        gridSize,
+                        gridSize
+                    );
+                    // Removed grid lines
+                }
+            }
+
+
+
+            // Draw player, relative to the view offset
+            const playerScreenX = playerX * gridSize - viewOffsetX/zoomLevel;
+            const playerScreenY = playerY * gridSize - viewOffsetY/zoomLevel;
+            ctx.fillStyle = '#ef4444'; // Red for player
+            ctx.fillRect(playerScreenX, playerScreenY, gridSize, gridSize);
+            ctx.strokeStyle = '#b91c1c';  // Darker red border
+            ctx.strokeRect(playerScreenX, playerScreenY, gridSize, gridSize);
+
+            // Draw town names
+            ctx.fillStyle = '#000000'; // Black text for town names
+            ctx.font = '12px sans-serif'; // Adjust font size and family as needed
+            for (const [coords, name] of Object.entries(townNames)) {
+                const [x, y] = coords.split(",").map(Number);
+                const townX = x * gridSize - viewOffsetX/zoomLevel + gridSize / 2; // Center text
+                const townY = y * gridSize - viewOffsetY/zoomLevel + gridSize + 14; // Position below town
+                ctx.textAlign = 'center';
+                ctx.fillText(name, townX, townY);
+            }
+
+            ctx.restore();
+        }
+
+        function movePlayer(dx, dy) {
+            const newX = playerX + dx;
+            const newY = playerY + dy;
+
+
+            if (newX >= 0 && newX < mapWidth && newY >= 0 && newY < mapHeight && (mapData[newY][newX] === 0 || mapData[newY][newX] === 2 || mapData[newY][newX] === 4 || mapData[newY][newX] === 5 || mapData[newY][newX] === 6)) {
+                playerX = newX;
+                playerY = newY;
+                foodCount -= 1; // Reduce food count
+                // goldCount += 5; // removed adding gold
+                updateFoodCounter();
+                updateGoldCounter();
+
+                if (foodCount <= 0) {
+                    gameOverReason.textContent = "You have run out of food!";
+                    gameOver(); //call game over function
+                    return;
+                }
+                //check if the player is on a town
+                if(mapData[newY][newX] === 4){
+                    foodCount = 100;
+                    updateFoodCounter();
+                }
+                // Removed showSquareValue()
+                //calculate the player's position on the canvas
+                const playerScreenX = playerX * gridSize - viewOffsetX/zoomLevel;
+                const playerScreenY = playerY * gridSize - viewOffsetY/zoomLevel;
+
+                //if the player is offscreen, recenter
+                if (playerScreenX < 0 || playerScreenX > canvas.width/zoomLevel || playerScreenY < 0 || playerScreenY > canvas.height/zoomLevel) {
+                    viewOffsetX = playerX * gridSize - canvas.width / (2 * zoomLevel);
+                    viewOffsetY = playerY * gridSize - canvas.height / (2 * zoomLevel);
+                }
+                drawMap();
+            }
+        }
+
+        function gameOver() {
+            gameOverScreen.style.display = 'flex'; //show game over screen
+            // Disable input
+            window.removeEventListener('keydown', handleKeyDown);
+            canvas.removeEventListener('mousedown', handleMouseDown);
+            canvas.removeEventListener('mousemove', handleMouseMove);
+            canvas.removeEventListener('mouseup', handleMouseUp);
+            canvas.removeEventListener('mouseleave', handleMouseLeave);
+            canvas.removeEventListener('wheel', handleMouseWheel);
+        }
+
+        function restartGame() {
+            gameOverScreen.style.display = 'none'; //hide game over screen
+            //re-enable input
+            window.addEventListener('keydown', handleKeyDown);
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('mouseleave', handleMouseLeave);
+            canvas.addEventListener('wheel', handleMouseWheel);
+
+            foodCount = 100; //reset food
+            goldCount = 10; // Reset gold
+            updateFoodCounter();
+            updateGoldCounter();
+            generateMap();
+            initializePlayer();
+            resizeCanvas();
+            drawMap();
+        }
+
+        let handleKeyDown = (event) => {
+            switch (event.key) {
+                case 'ArrowUp':
+                case 'w':
+                    movePlayer(0, -1);
+                    break;
+                case 'ArrowDown':
+                case 's':
+                    movePlayer(0, 1);
+                    break;
+                case 'ArrowLeft':
+                case 'a':
+                    movePlayer(-1, 0);
+                    break;
+                case 'ArrowRight':
+                case 'd':
+                    movePlayer(1, 0);
+                    break;
+            }
+        };
+
+        let handleMouseDown = (event) => {
+            isDragging = true;
+            dragStartX = event.clientX;
+            dragStartY = event.clientY;
+            canvas.style.cursor = 'grabbing';
+        };
+
+        let handleMouseMove = (event) => {
+            if (!isDragging) return;
+            const deltaX = event.clientX - dragStartX;
+            const deltaY = event.clientY - dragStartY;
+            viewOffsetX -= deltaX / zoomLevel;
+            viewOffsetY -= deltaY / zoomLevel;
+            dragStartX = event.clientX;
+            dragStartY = event.clientY;
+            drawMap();
+        };
+
+        let handleMouseUp = () => {
+            isDragging = false;
+            canvas.style.cursor = 'grab';
+        };
+
+        let handleMouseLeave = () => {
+            isDragging = false;
+            canvas.style.cursor = 'grab';
+        };
+
+        let handleMouseWheel = (event) => {
+            event.preventDefault(); // Prevent page scroll
+
+            if (event.deltaY < 0) { // Scrolling up, zoom in
+                zoomLevel = Math.min(maxZoom, zoomLevel + zoomSpeed);
+            } else if (event.deltaY > 0) { // Scrolling down, zoom out
+                zoomLevel = Math.max(minZoom, zoomLevel - zoomSpeed);
+            }
+            drawMap();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        canvas.addEventListener('mousedown', handleMouseDown);
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseup', handleMouseUp);
+        canvas.addEventListener('mouseleave', handleMouseLeave);
+        canvas.addEventListener('wheel', handleMouseWheel);
+        restartButton.addEventListener('click', restartGame);
+
+
+        window.addEventListener('load', () => {
+            resizeCanvas(); // Initial setup
+            updateFoodCounter();
+            updateGoldCounter();
+            drawMap();
+        });
+
+        window.addEventListener('resize', () => {
+            resizeCanvas(); // Handle resizes
+        });
+    </script>
+</body>
+</html>

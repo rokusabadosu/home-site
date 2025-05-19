@@ -10,7 +10,7 @@
       background: url("/images/rokusaba.png") center/cover no-repeat;
     }
     h1 {
-      font-size: 48px;
+      font-size: 52px;
       margin: 0 0 0px;
     }
     h2 {
@@ -19,6 +19,7 @@
     }
     h3 {
       font-weight: bold;
+        margin: 5px;
     }
     .sub-title {
       font-size: 24px;

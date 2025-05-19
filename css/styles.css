@@ -9,6 +9,10 @@
       font-family: sans-serif;
       background: url("/images/rokusaba.png") center/cover no-repeat;
     }
+    h2 {
+      font-size: 48px;
+      margin: 0 0 0px;
+    }
     h1 {
       font-size: 40px;
       margin: 0 0 20px;

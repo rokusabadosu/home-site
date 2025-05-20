@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journey of the Oumuamua</title>
+
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #000;
+            font-family: sans-serif; /* Changed font-family to sans-serif */
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: none; /* Hide the cursor */
+        }
+
+        #starCounter {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #ffffff;
+            font-size: 1.5vw;
+            padding: 0.5vw;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 0.5vw;
+            z-index: 10;
+            white-space: nowrap;
+            font-weight: bold;
+            font-family: sans-serif; /* Changed font-family to sans-serif */
+        }
+
+        #timerDisplay {
+            position: absolute;
+            top: 40px;
+            left: 10px;
+            color: #ffffff;
+            font-size: 1.5vw;
+            padding: 0.5vw;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 0.5vw;
+            z-index: 10;
+            white-space: nowrap;
+            font-weight: bold;
+            font-family: sans-serif; /* Changed font-family to sans-serif */
+        }
+
+        #fuelDisplay {
+            position: absolute;
+            top: 70px;
+            left: 10px;
+            color: #ffffff;
+            font-size: 1.5vw;
+            padding: 0.5vw;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 0.5vw;
+            z-index: 10;
+            white-space: nowrap;
+            font-weight: bold;
+            font-family: sans-serif; /* Changed font-family to sans-serif */
+        }
+
+        #bestTimeDisplay {
+            position: absolute;
+            top: 100px;
+            left: 10px;
+            color: #ffffff;
+            font-size: 1.5vw;
+            padding: 0.5vw;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 0.5vw;
+            z-index: 10;
+            white-space: nowrap;
+            font-weight: bold;
+            font-family: sans-serif; /* Changed font-family to sans-serif */
+        }
+
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 11;
+            color: #ffffff;
+            font-size: 3vw;
+            text-align: center;
+            font-family: sans-serif; /* Changed font-family to sans-serif */
+        }
+
+        #gameOverScreen button {
+            margin-top: 2vw;
+            padding: 1vw 2vw;
+            font-size: 1.5vw;
+            background-color: #00FFFF;
+            color: #000;
+            border: none;
+            border-radius: 0.5vw;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-family: sans-serif; /* Changed font-family to sans-serif */
+        }
+
+        #gameOverScreen button:hover {
+            background-color: #00b3b3;
+        }
+
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 12;
+            color: #ffffff;
+            font-size: 3vw;
+            text-align: center;
+            font-family: sans-serif; /* Changed font-family to sans-serif */
+        }
+
+        #startScreen button {
+            margin-top: 2vw;
+            padding: 1vw 2vw;
+            font-size: 1.5vw;
+            background-color: #00FFFF;
+            color: #000;
+            border: none;
+            border-radius: 0.5vw;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-family: sans-serif; /* Changed font-family to sans-serif */
+            margin: 10px;
+        }
+
+        #startScreen button:hover {
+            background-color: #00b3b3;
+        }
+
+        #startScreen h1 {
+            font-size: 4vw;
+            margin-bottom: 2vw;
+            font-family: sans-serif; /* Changed font-family to sans-serif */
+        }
+
+        #startScreen div {
+            display: flex;
+            flex-direction: row;
+            margin-top: 2vw;
+            font-family: sans-serif; /* Changed font-family to sans-serif */
+        }
+    </style>
+</head>
+<body>
+    <div id="starCounter">Visited Stars: 0</div>
+    <div id="timerDisplay">Elapsed Time: 0 Years</div>
+    <div id="fuelDisplay">Fuel: 1000</div>
+    <div id="bestTimeDisplay">Best Time: Not Set</div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="startScreen">
+        <h1 id="gameOverTitle">You are the Captain of the Oumuamua.</h1>
+        <p id="gameOverText">Your mission is to visit all stars in the local system.</p>
+        <p id="gameOverTime"></p>
+        <div>
+            <button id="easyButton">Easy</button>
+            <button id="mediumButton">Medium</button>
+            <button id="hardButton">Hard</button>
+        </div>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const starCounterElement = document.getElementById('starCounter');
+        const timerDisplayElement = document.getElementById('timerDisplay');
+        const fuelDisplayElement = document.getElementById('fuelDisplay');
+        const gameOverTitle = document.getElementById('gameOverTitle');
+        const gameOverText = document.getElementById('gameOverText');
+        const gameOverTime = document.getElementById('gameOverTime');
+        const bestTimeDisplayElement = document.getElementById('bestTimeDisplay');
+        const startScreen = document.getElementById('startScreen');
+        const easyButton = document.getElementById('easyButton');
+        const mediumButton = document.getElementById('mediumButton');
+        const hardButton = document.getElementById('hardButton');
+
+        let dimensions = { width: window.innerWidth, height: window.innerHeight };
+
+        canvas.width = dimensions.width;
+        canvas.height = dimensions.height;
+
+        let spaceship = {
+            x: dimensions.width / 2,
+            y: dimensions.height / 2,
+            angle: Math.PI / 2,
+            speed: 0,
+            rotationSpeed: 0.05,
+            acceleration: 0.1,
+            maxSpeed: 5,
+            color: '#00FFFF',
+            fuel: 1000
+        };
+
+        let stars = [];
+        const numStars = 12;
+        const starRadius = 6;
+        const starColor = '#ffffff';
+        const visitedColorFactor = 1.5;
+        let visitedStars = new Set();
+        let visitedStarCount = 0;
+        let elapsedTime = 0;
+        let timerInterval;
+        let gameOver = false;
+        let fuelPerVisit = 20;
+        const haloSize = 10;
+        const haloColor = 'rgba(0, 255, 255, 0.5)';
+        const gravityConstant = 0.1;
+        const gravityRadius = 20;
+        const counterWidth = 150;
+        const counterHeight = 80;
+        const edgeMargin = 50;
+        let bestTime = null;
+        let difficulty = 'medium';
+
+        function generateStars() {
+            stars = [];
+            for (let i = 0; i < numStars; i++) {
+                // Generate random bright colors for the stars
+                const r = 150 + Math.floor(Math.random() * 106);
+                const g = 150 + Math.floor(Math.random() * 106);
+                const b = 150 + Math.floor(Math.random() * 106);
+                const randomColor = `rgb(${r},${g},${b})`;
+
+                // Ensure stars are not generated near the edges or behind the counters
+                const minX = Math.max(edgeMargin, counterWidth + edgeMargin);
+                const maxX = dimensions.width - edgeMargin;
+                const minY = Math.max(edgeMargin, counterHeight + edgeMargin);
+                const maxY = dimensions.height - edgeMargin;
+
+                stars.push({
+                    x: minX + Math.random() * (maxX - minX),
+                    y: minY + Math.random() * (maxY - minY),
+                    radius: starRadius,
+                    color: randomColor,
+                    visited: false,
+                    initialColor: randomColor,
+                });
+            }
+        }
+
+        function drawStars() {
+            stars.forEach(star => {
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+                ctx.fillStyle = star.color;
+                ctx.fill();
+                ctx.closePath();
+
+                if (star.visited) {
+                    // Draw the halo
+                    ctx.beginPath();
+                    ctx.arc(star.x, star.y, star.radius + haloSize, 0, Math.PI * 2);
+                    ctx.strokeStyle = star.color;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.closePath();
+                }
+            });
+        }
+
+        function drawSpaceship() {
+            ctx.save();
+            ctx.translate(spaceship.x, spaceship.y);
+            ctx.rotate(spaceship.angle);
+
+            ctx.beginPath();
+            // Cigar shape with pointed front and blunt end
+            ctx.moveTo(20, 0);       // Tip of the cigar
+            ctx.lineTo(10, 5);
+            ctx.lineTo(-10, 5);    
+            ctx.lineTo(-15, 0);    // Blunt end
+            ctx.lineTo(-10, -5);
+            ctx.lineTo(10, -5);
+            ctx.closePath();
+            ctx.fillStyle = spaceship.color;
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        let keys = {};
+
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key] = false;
+        });
+
+        function updateSpaceship() {
+            if (gameOver) return;
+
+            if (keys['w'] || keys['ArrowUp']) {
+                spaceship.speed += spaceship.acceleration;
+                spaceship.fuel -= 1;
+            }
+            if (keys['s'] || keys['ArrowDown']) {
+                spaceship.speed -= spaceship.acceleration;
+                spaceship.fuel -= 1;
+            }
+            if (keys['a'] || keys['ArrowLeft']) {
+                spaceship.angle -= spaceship.rotationSpeed;
+                spaceship.fuel -= 1;
+            }
+            if (keys['d'] || keys['ArrowRight']) {
+                spaceship.angle += spaceship.rotationSpeed;
+                spaceship.fuel -= 1;
+            }
+
+            spaceship.speed = Math.max(Math.min(spaceship.speed, spaceship.maxSpeed), 0);
+
+            // Apply gravity from stars
+            stars.forEach(star => {
+                const dx = star.x - spaceship.x;
+                const dy = star.y - spaceship.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < gravityRadius) {
+                    // Calculate the gravitational force vector
+                    const force = gravityConstant / (distance); // Simplified gravity formula using d rather than d^2
+                    const targetAngle = Math.atan2(dy, dx);
+
+                    // Calculate the difference between the target angle and the spaceship's current angle
+                    let angleDifference = targetAngle - spaceship.angle;
+                    // Ensure the difference is the smallest angle (avoid spinning > 180 degrees)
+                    if (angleDifference > Math.PI) {
+                        angleDifference -= 2 * Math.PI;
+                    } else if (angleDifference < -Math.PI) {
+                        angleDifference += 2 * Math.PI;
+                    }
+
+                    // Adjust the spaceship's angle, stronger when closer
+                    spaceship.angle += angleDifference * force; //Adjust for stronger pull
+                    //spaceship.fuel -= 0.1; // applying fuel cost for gravity effect
+                }
+            });
+
+            spaceship.x += spaceship.speed * Math.cos(spaceship.angle);
+            spaceship.y += spaceship.speed * Math.sin(spaceship.angle);
+
+            if (spaceship.x > dimensions.width) spaceship.x = 0;
+            if (spaceship.x < 0) spaceship.x = dimensions.width;
+            if (spaceship.y > dimensions.height) spaceship.y = 0;
+            if (spaceship.y < 0) spaceship.y = dimensions.height;
+
+            stars.forEach((star, index) => {
+                const dx = spaceship.x - star.x;
+                const dy = spaceship.y - star.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < star.radius + 10 && !star.visited) {
+                    star.visited = true;
+                    visitedStars.add(index);
+                    visitedStarCount = visitedStars.size;
+                    starCounterElement.textContent = `Visited Stars: ${visitedStarCount}`;
+
+                    spaceship.fuel = Math.min(spaceship.fuel + fuelPerVisit, 1000);
+                }
+            });
+
+            fuelDisplayElement.textContent = `Fuel: ${Math.max(0, spaceship.fuel)}`;
+
+            if (spaceship.fuel <= 0) {
+                endGame("fuel");
+            }
+
+            if (visitedStars.size === numStars) {
+                endGame("stars");
+            }
+        }
+
+        function updateTimer() {
+            elapsedTime += 1;
+            timerDisplayElement.textContent = `Elapsed Time: ${elapsedTime * 100} Years`;
+        }
+
+        function endGame(reason) {
+            gameOver = true;
+            clearInterval(timerInterval);
+            gameOverTime.textContent = `Elapsed Time: ${elapsedTime * 100} Years`;
+            if (reason === "fuel") {
+                gameOverTitle.textContent = "Game Over";
+                gameOverText.textContent = "You ran out of fuel!";
+            } else if (reason === "stars") {
+                gameOverTitle.textContent = "Well done Captain!";
+                gameOverText.textContent = "You have fulfilled your mission by mapping out the local star system!";
+                if (bestTime === null || elapsedTime < bestTime) {
+                    bestTime = elapsedTime;
+                    bestTimeDisplayElement.textContent = `Best Time: ${bestTime * 100} Years`;
+                }
+            }
+            startScreen.style.display = "flex";
+        }
+
+        function startGame() {
+            gameOver = false;
+            startScreen.style.display = "none";
+            spaceship.x = dimensions.width / 2;
+            spaceship.y = dimensions.height / 2;
+            spaceship.angle = Math.PI / 2;
+            spaceship.speed = 0;
+            //spaceship.fuel = 1000;
+            visitedStars.clear();
+            visitedStarCount = 0;
+            elapsedTime = 0;
+            starCounterElement.textContent = `Visited Stars: ${visitedStarCount}`;
+            fuelDisplayElement.textContent = `Fuel: ${spaceship.fuel}`;
+            timerInterval = setInterval(updateTimer, 1000);
+            generateStars();
+            gameLoop();
+        }
+
+        function gameLoop() {
+            if (!gameOver) {
+                ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+                drawStars();
+                drawSpaceship();
+                updateSpaceship();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        let startingFuel = 0;
+
+        easyButton.addEventListener('click', () => {
+            startingFuel = 500;
+            fuelPerVisit = 100;
+            spaceship.fuel = startingFuel;
+            fuelDisplayElement.textContent = `Fuel: ${spaceship.fuel}`;
+            startGame();
+        });
+
+        mediumButton.addEventListener('click', () => {
+            startingFuel = 150;
+            fuelPerVisit = 30;
+            spaceship.fuel = startingFuel;
+            fuelDisplayElement.textContent = `Fuel: ${spaceship.fuel}`;
+            startGame();
+        });
+
+        hardButton.addEventListener('click', () => {
+            startingFuel = 50;
+            fuelPerVisit = 10;
+            spaceship.fuel = startingFuel;
+            fuelDisplayElement.textContent = `Fuel: ${spaceship.fuel}`;
+            startGame();
+        });
+
+        window.addEventListener('resize', () => {
+            dimensions = { width: window.innerWidth, height: window.innerHeight };
+            canvas.width = dimensions.width;
+            canvas.height = dimensions.height;
+            generateStars();
+        });
+    </script>
+</body>
+</html>

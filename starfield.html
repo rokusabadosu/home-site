@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Great Exodus</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden; /* Hide scrollbars */
+            background-color: #000; /* Black background for space */
+            font-family: 'Inter', sans-serif; /* Using Inter font */
+            color: #fff;
+        }
+        canvas {
+            display: block; /* Remove extra space below canvas */
+            width: 100vw; /* Full viewport width */
+            height: 100vh; /* Full viewport height */
+            /* Initially hidden, shown when game starts */
+            display: none;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #fff;
+            z-index: 10;
+            min-width: 200px; /* Ensure enough space for text */
+        }
+        #controls-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 8px;
+            z-index: 10;
+            display: flex; /* Use flexbox for button layout */
+            gap: 10px; /* Space between buttons */
+            /* Initially hidden, shown when game starts */
+            display: none;
+        }
+        button {
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px; /* Rounded corners for buttons */
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        button:hover {
+            filter: brightness(1.2); /* Slightly brighter on hover */
+            transform: translateY(-2px); /* Slight lift effect */
+        }
+        button:active {
+            transform: translateY(0); /* Press effect */
+        }
+
+        /* Specific button colors */
+        #resetViewButton {
+            background-color: #007bff;
+        }
+        #resetViewButton:hover {
+            background-color: #0056b3;
+        }
+        #jumpButton {
+            background-color: #28a745; /* Green for jump button */
+        }
+        #jumpButton:hover {
+            background-color: #218838;
+        }
+        #playAgainButton {
+            background-color: #6f42c1; /* Purple for play again button */
+        }
+        #playAgainButton:hover {
+            background-color: #5a35a1;
+        }
+        /* Start Screen Styles */
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 100; /* Ensure it's on top */
+        }
+        #start-screen h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: #ffc107; /* Gold-like color for title */
+        }
+        #start-screen p {
+            font-size: 1.2em;
+            max-width: 800px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        #start-screen .controls-explanation {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 1.1em;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        #start-screen button {
+            margin-top: 30px;
+            background-color: #28a745; /* Green start button */
+            font-size: 1.5em;
+            padding: 12px 25px;
+        }
+        #start-screen button:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div id="start-screen">
+        <h1>The Great Exodus</h1>
+        <p>
+            Your home star is rapidly expanding, threatening to consume your civilization.
+            Your people have embarked on a desperate journey to find a new home amongst the distant stars.
+            Navigate through the cosmos, making strategic jumps to reach your new target.
+        </p>
+        <p>
+            Remember, small jumps through nearby stars are faster and require fewer generations to complete,
+            preserving more of your people's history and culture. Choose your path wisely!
+        </p>
+        <div class="controls-explanation">
+            <h3>Movement Controls:</h3>
+            <p>
+                <strong>Mouse:</strong> Click and drag to rotate the camera. Scroll to zoom in/out.<br>
+                <strong>WASD / Arrow Keys:</strong> Strafe the camera (move sideways, up, down).<br>
+                <strong>Click on a Star:</strong> Focus the camera on that star and enable the "Jump Spaceship Here" button.<br>
+                <strong>"Go to Target" Button:</strong> Focuses the camera on your ultimate destination.
+            </p>
+        </div>
+        <button id="startGameButton">Begin Journey</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="info"></div>
+    <div id="controls-panel">
+        <button id="homeButton">&#x1F3E0;</button>
+        <button id="resetViewButton">Reset View</button>
+        <button id="goToTargetButton">Go to Target</button>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script>
+        // Declare global variables for the Three.js scene
+        let scene, camera, renderer, controls;
+        const stars = []; // Array to hold all the star objects
+        const raycaster = new THREE.Raycaster(); // Used for detecting intersections (clicks)
+        const mouse = new THREE.Vector2(); // Stores mouse coordinates
+        let infoPanel; // Reference to the info panel div
+        let homeworldStar = null; // To store the randomly chosen homeworld star (fixed home)
+        let homeworldColor = null; // To store the random color of the homeworld
+        let targetStar = null; // To store the randomly chosen target star
+        let targetColor = null; // To store the random color of the target star
+        let spaceship = null; // To store the spaceship object
+        let selectedStar = null; // To store the currently clicked star (target for jump)
+        let currentSpaceshipLocationStar = null; // Tracks the star the spaceship is currently at
+
+        // Store initial camera position and target for reset functionality
+        let initialCameraPosition = new THREE.Vector3();
+        let initialControlsTarget = new THREE.Vector3();
+
+        // Keyboard movement variables
+        const keyboard = {}; // Object to track pressed keys
+        const moveSpeed = 1.0; // Speed of camera movement
+
+        // Touch swipe variables
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        let isSwiping = false; // Flag to differentiate between swipe and click
+        const swipeThreshold = 50; // Minimum pixel distance for a swipe to be registered
+
+        // List of interesting star names
+        const starNames = [
+            "Sirius", "Vega", "Rigel", "Deneb", "Altair", "Antares", "Spica", "Pollux",
+            "Fomalhaut", "Regulus", "Castor", "Aldebaran", "Capella", "Procyon", "Betelgeuse",
+            "Arcturus", "Canopus", "Centauri", "Mira", "Polaris", "Andromeda", "Orion",
+            "Cassiopeia", "Lyra", "Cygnus", "Aquila", "Scorpius", "Ursa Major", "Ursa Minor",
+            "Draco", "Leo", "Virgo", "Libra", "Sagittarius", "Capricornus", "Aquarius",
+            "Pisces", "Aries", "Taurus", "Gemini", "Cancer", "Hydra", "Perseus", "Hercules",
+            "Corona Borealis", "Bootes", "Cetus", "Eridanus", "Pavo", "Phoenix", "Tucana",
+            "Grus", "Indus", "Octans", "Mensa", "Chamaeleon", "Musca", "Crux", "Triangulum",
+            "Reticulum", "Pictor", "Volans", "Dorado", "Caelum", "Horologium", "Fornax",
+            "Sculptor", "Microscopium", "Telescopium", "Norma", "Circinus", "Lupus", "Ara",
+            "Corona Australis", "Ophiuchus", "Serpens", "Sagitta", "Delphinus", "Equuleus",
+            "Vulpecula", "Lacerta", "Camelopardalis", "Lynx", "Sextans", "Crater", "Corvus",
+            "Pyxis", "Vela", "Puppis", "Carina", "Columba", "Caelum", "Lepus", "Monoceros",
+            "Canis Major", "Canis Minor", "Coma Berenices", "Triangulum Australe", "Apus"
+        ];
+        let availableStarNames = []; // To hold names that haven't been used yet
+
+        // Variables for path drawing
+        let spaceshipPath = []; // Stores THREE.Vector3 positions of stars visited
+        let pathLinesGroup; // A group to hold all line segments for easy clearing
+
+        // Game state flag
+        let isGameOver = false;
+        // Generations counter
+        let generationsCount = 0;
+
+        /**
+         * Generates a random hexadecimal color string.
+         * @returns {string} A random color in '#RRGGBB' format.
+         */
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+
+        /**
+         * Generates a bright random hexadecimal color string.
+         * Ensures RGB values are generally high for brightness.
+         * @returns {string} A bright random color in '#RRGGBB' format.
+         */
+        function getBrightRandomColor() {
+            const r = Math.floor(Math.random() * 106) + 150; // 150 to 255
+            const g = Math.floor(Math.random() * 106) + 150; // 150 to 255
+            const b = Math.floor(Math.random() * 106) + 150; // 150 to 255
+
+            // Convert to hex
+            const toHex = (c) => ('0' + c.toString(16)).slice(-2);
+            return '#' + toHex(r) + toHex(g) + toHex(b);
+        }
+
+        /**
+         * Creates a simple spaceship 3D model with the cone's point as the front.
+         * @returns {THREE.Group} A group containing the spaceship's mesh components.
+         */
+        function createSpaceship() {
+            const spaceshipGroup = new THREE.Group();
+
+            // Main body (cone) - now the front, with its point facing forward (positive Z)
+            const bodyGeometry = new THREE.ConeGeometry(0.8, 2, 32); // Radius, height, segments
+            const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0xcccccc });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.rotation.x = Math.PI / 2; // Rotate to point along positive Z-axis (point facing front)
+            body.position.z = 1; // Position its point at Z=1 (relative to group center)
+            spaceshipGroup.add(body);
+
+            // Engine (cylinder) - positioned behind the cone
+            const engineGeometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 32); // Radius top, radius bottom, height, segments
+            const engineMaterial = new THREE.MeshPhongMaterial({ color: 0x888888 });
+            const engine = new THREE.Mesh(engineGeometry, engineMaterial);
+            engine.position.z = -0.5; // Position so its front face connects to the base of the cone
+            spaceshipGroup.add(engine);
+
+            // Simple fins (boxes) - positioned around the cone body, adjusted for new Z
+            const finMaterial = new THREE.MeshPhongMaterial({ color: 0x555555 });
+            const fin1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1, 0.5), finMaterial);
+            fin1.position.set(0.7, 0, 0.5); // Adjusted Z position to be on the cone part
+            fin1.rotation.z = Math.PI / 2;
+            spaceshipGroup.add(fin1);
+
+            const fin2 = fin1.clone();
+            fin2.position.set(-0.7, 0, 0.5); // Adjusted Z position
+            spaceshipGroup.add(fin2);
+
+            // Add a light to illuminate the spaceship
+            const pointLight = new THREE.PointLight(0xffffff, 1, 10);
+            pointLight.position.set(0, 0, 0); // Light at the center of the spaceship group
+            spaceshipGroup.add(pointLight);
+
+            return spaceshipGroup;
+        }
+
+        /**
+         * Finds a star that is on the "edge" of the star field, i.e., furthest from the origin.
+         * @returns {THREE.Mesh} The star furthest from the origin.
+         */
+        function findEdgeStar() {
+            let furthestStar = null;
+            let maxDistanceSq = -1; // Squared distance for performance
+
+            for (const star of stars) {
+                const distanceSq = star.position.lengthSq(); // Distance from origin squared
+                if (distanceSq > maxDistanceSq) {
+                    maxDistanceSq = distanceSq;
+                    furthestStar = star;
+                }
+            }
+            return furthestStar;
+        }
+
+        /**
+         * Finds a star that is roughly on the opposite side of the star field from a reference star.
+         * Excludes the reference star itself.
+         * @param {THREE.Mesh} referenceStar - The star to find an opposite for.
+         * @returns {THREE.Mesh} The star on the opposite side.
+         */
+        function findOppositeStar(referenceStar) {
+            let oppositeStar = null;
+            let maxOppositeScore = -Infinity; // Higher score means more opposite and further away
+
+            const refPosition = referenceStar.position.clone().normalize(); // Normalized vector from origin to reference star
+
+            for (const star of stars) {
+                if (star === referenceStar) continue; // Skip the reference star itself
+
+                const starPosition = star.position.clone();
+                const starFromOrigin = starPosition.normalize(); // Normalized vector from origin to current star
+
+                // Calculate dot product: -1 means perfectly opposite, 1 means same direction
+                const dotProduct = refPosition.dot(starFromOrigin);
+
+                // Calculate distance from reference star
+                const distance = referenceStar.position.distanceTo(starPosition);
+
+                // Combine dot product (negative for opposite) and distance for a score
+                // We want a large negative dot product (opposite direction) and a large distance.
+                // A simple score could be (1 - dotProduct) * distance.
+                // (1 - (-1)) * distance = 2 * distance (for perfectly opposite)
+                // (1 - 1) * distance = 0 (for same direction)
+                const score = (1 - dotProduct) * distance;
+
+                if (score > maxOppositeScore) {
+                    maxOppositeScore = score;
+                    oppositeStar = star;
+                }
+            }
+            return oppositeStar;
+        }
+
+
+        /**
+         * Initializes the Three.js scene, camera, renderer, and controls.
+         * Sets up the scene with 100 randomly placed stars.
+         */
+        function initializeGameScene() {
+            // 1. Scene setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000); // Black background for space
+
+            // Add ambient light to illuminate objects uniformly
+            const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
+            scene.add(ambientLight);
+
+            // Add a directional light to simulate sunlight
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(1, 1, 1).normalize();
+            scene.add(directionalLight);
+
+            // Initialize pathLinesGroup and add to scene
+            pathLinesGroup = new THREE.Group();
+            scene.add(pathLinesGroup);
+
+            // Get reference to the info panel
+            infoPanel = document.getElementById('info');
+            // Initial info panel text: only generations count
+            infoPanel.innerHTML = `Generations: ${generationsCount}`;
+
+
+            // 2. Camera setup
+            // PerspectiveCamera(fov, aspect, near, far)
+            // fov: Camera frustum vertical field of view.
+            // aspect: Camera frustum aspect ratio.
+            // near: Camera frustum near plane.
+            // far: Camera frustum far plane.
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 100; // Move camera back to see the stars (adjusted for 100 stars)
+
+            // Store initial camera state
+            initialCameraPosition.copy(camera.position);
+            initialControlsTarget.copy(new THREE.Vector3(0, 0, 0)); // Assuming initial target is center
+
+            // 3. Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, canvas: document.getElementById('gameCanvas') }); // Use existing canvas
+            renderer.setSize(window.innerWidth, window.innerHeight); // Set renderer size to full window
+
+            // 4. OrbitControls setup (for camera interaction)
+            // Allows the user to rotate, pan, and zoom the camera with mouse.
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; // Enable damping (inertia) for smoother controls
+            controls.dampingFactor = 0.05; // Damping factor
+            controls.screenSpacePanning = false; // Disable screen space panning
+            controls.minDistance = 1; // Minimum zoom distance (can go very close to a star)
+            controls.maxDistance = 600; // Increased maximum zoom distance to see all stars
+            controls.zoomSpeed = 2.5; // Increased zoom speed
+
+            // Populate available star names for unique assignment
+            availableStarNames = [...starNames];
+
+            // 5. Generate 100 stars
+            const numberOfStars = 100;
+            for (let i = 0; i < numberOfStars; i++) {
+                addStar(); // No longer passing index, names are picked from the list
+            }
+
+            // 6. Choose homeworld star on the edge and target star on the opposite side
+            if (stars.length > 0) {
+                homeworldStar = findEdgeStar();
+                homeworldColor = getBrightRandomColor();
+                homeworldStar.material.color.set(homeworldColor);
+                homeworldStar.userData.name = `Homeworld: ${homeworldStar.userData.name}`;
+                homeworldStar.scale.set(1.5, 1.5, 1.5); // Make homeworld star 1.5 times larger
+
+                targetStar = findOppositeStar(homeworldStar);
+                targetColor = getRandomColor(); // Random color for target star
+                if (targetStar) {
+                    targetStar.material.color.set(targetColor);
+                    targetStar.userData.name = `Target: ${targetStar.userData.name}`;
+                    targetStar.scale.set(1.5, 1.5, 1.5); // Make target star 1.5 times larger
+                }
+
+                // Set the home button's background color to match the homeworld star
+                document.getElementById('homeButton').style.backgroundColor = homeworldColor;
+                // Set the "Go to Target" button's background color to match the target star
+                document.getElementById('goToTargetButton').style.backgroundColor = targetColor;
+            }
+
+            // Set the initial spaceship location to the homeworld star
+            currentSpaceshipLocationStar = homeworldStar;
+            generationsCount = 0; // Ensure counter starts at 0 for a new game
+            infoPanel.innerHTML = `Generations: ${generationsCount}`; // Update info panel
+
+            // Add homeworld position to the path when starting
+            spaceshipPath.push(homeworldStar.position.clone());
+
+            // 7. Add the spaceship
+            spaceship = createSpaceship();
+            // Position the spaceship at the homeworld initially
+            spaceship.position.copy(homeworldStar.position);
+            scene.add(spaceship);
+            // Initialize spaceship's previous position for orientation calculation
+            spaceship.previousPosition = spaceship.position.clone();
+
+
+            // 8. Event Listeners (only added once game starts)
+            window.addEventListener('resize', onWindowResize, false);
+            renderer.domElement.addEventListener('click', onCanvasClick, false); // Listen for clicks on the canvas
+            document.getElementById('resetViewButton').addEventListener('click', resetView, false); // Listen for reset button click
+            document.getElementById('homeButton').addEventListener('click', zoomToHomeworld, false); // Listen for home button click
+            document.getElementById('goToTargetButton').addEventListener('click', goToTargetStar, false); // Listen for "Go to Target" button
+
+
+            // Keyboard event listeners for movement
+            window.addEventListener('keydown', onKeyDown, false);
+            window.addEventListener('keyup', onKeyUp, false);
+
+            // Touch event listeners for movement (swipe)
+            renderer.domElement.addEventListener('touchstart', onTouchStart, false);
+            renderer.domElement.addEventListener('touchmove', onTouchMove, false);
+            renderer.domElement.addEventListener('touchend', onTouchEnd, false);
+        }
+
+        /**
+         * Adds a single star (sphere) to the scene at a random position.
+         * Assigns a unique, interesting name to the star.
+         */
+        function addStar() {
+            // Star geometry (radius, segments, segments)
+            // Increased radius from 0.5 to 1.0 to make stars twice as big
+            const geometry = new THREE.SphereGeometry(1.0, 32, 32);
+            // Star material (color, emissive for glow)
+            const material = new THREE.MeshBasicMaterial({ color: 0xffffff }); // White color for stars
+            const star = new THREE.Mesh(geometry, material);
+
+            // Set random position for the star
+            // Values are between -200 and 200 for x, y, z to spread them out.
+            star.position.x = (Math.random() - 0.5) * 400;
+            star.position.y = (Math.random() - 0.5) * 400;
+            star.position.z = (Math.random() - 0.5) * 400;
+
+            // Assign a unique name to the star from the available list
+            let assignedName = "Unnamed Star";
+            if (availableStarNames.length > 0) {
+                const randomIndex = Math.floor(Math.random() * availableStarNames.length);
+                assignedName = availableStarNames.splice(randomIndex, 1)[0]; // Remove used name
+            } else {
+                // Fallback if all unique names are used (shouldn't happen with 100 stars and >100 names)
+                assignedName = `Star ${stars.length + 1}`;
+            }
+
+            // Assign name and position to the star using userData
+            star.userData = {
+                name: assignedName,
+                position: star.position.clone() // Store a copy of the position
+            };
+
+            scene.add(star); // Add star to the scene
+            stars.push(star); // Add star to the stars array
+        }
+
+        /**
+         * Handles window resize events to make the scene responsive.
+         */
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight; // Update camera aspect ratio
+            camera.updateProjectionMatrix(); // Update camera's projection matrix
+            renderer.setSize(window.innerWidth, window.innerHeight); // Update renderer size
+        }
+
+        /**
+         * Handles clicks on the canvas to detect if a star was clicked.
+         * If a star is clicked, the camera will zoom to its position and display its name.
+         * @param {MouseEvent} event - The click event.
+         */
+        function onCanvasClick(event) {
+            if (isGameOver) return; // Prevent interaction if game is over
+
+            // If a swipe occurred, prevent click processing
+            if (isSwiping) {
+                isSwiping = false; // Reset the flag
+                return;
+            }
+
+            // Calculate mouse position in normalized device coordinates (-1 to +1)
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // Update the raycaster with the camera and mouse position
+            raycaster.setFromCamera(mouse, camera);
+
+            // Calculate objects intersecting the ray
+            const intersects = raycaster.intersectObjects(stars);
+
+            if (intersects.length > 0) {
+                // If a star was clicked, get its data
+                selectedStar = intersects[0].object; // Store the clicked star
+                const starName = selectedStar.userData.name;
+
+                // Display the star's name and a "Jump" button in the info panel
+                infoPanel.innerHTML = `
+                    Generations: ${generationsCount}<br>
+                    <strong>${starName}</strong><br>
+                    <button id="jumpButton">Jump Spaceship Here</button>
+                `;
+
+                // Add event listener to the new jump button
+                document.getElementById('jumpButton').addEventListener('click', jumpToSelectedStar, false);
+
+                zoomToStar(selectedStar.position);
+            } else {
+                // If no star was clicked, reset the info panel
+                infoPanel.innerHTML = `Generations: ${generationsCount}`;
+                selectedStar = null; // Clear selected star
+            }
+        }
+
+        /**
+         * Smoothly animates the camera to zoom in on a target position.
+         * @param {THREE.Vector3} targetPosition - The position to zoom to.
+         */
+        function zoomToStar(targetPosition) {
+            // Calculate a new camera position that is slightly offset from the target
+            // to provide a good view of the star.
+            const newCameraPosition = new THREE.Vector3();
+            newCameraPosition.copy(targetPosition);
+            newCameraPosition.z += 5; // Move camera slightly back from the star
+            newCameraPosition.y += 2; // Move camera slightly up from the star
+
+            // Use GSAP for smooth animation of camera position and controls target
+            gsap.to(camera.position, {
+                duration: 1.5, // Animation duration in seconds
+                x: newCameraPosition.x,
+                y: newCameraPosition.y,
+                z: newCameraPosition.z,
+                ease: "power2.inOut",
+                onUpdate: () => controls.update() // Update controls during animation
+            });
+
+            gsap.to(controls.target, {
+                duration: 1.5,
+                x: targetPosition.x,
+                y: targetPosition.y,
+                z: targetPosition.z,
+                ease: "power2.inOut",
+                onUpdate: () => controls.update()
+            });
+        }
+
+        /**
+         * Resets the camera to its initial position and target without moving the spaceship.
+         */
+        function resetView() {
+            if (isGameOver) return; // Prevent interaction if game is over
+
+            gsap.to(camera.position, {
+                duration: 1.5,
+                x: initialCameraPosition.x,
+                y: initialCameraPosition.y,
+                z: initialCameraPosition.z,
+                ease: "power2.inOut",
+                onUpdate: () => controls.update()
+            });
+
+            gsap.to(controls.target, {
+                duration: 1.5,
+                x: initialControlsTarget.x,
+                y: initialControlsTarget.y,
+                z: initialControlsTarget.z,
+                ease: "power2.inOut",
+                onUpdate: () => controls.update(),
+                onComplete: () => {
+                    // Reset the info panel text
+                    infoPanel.innerHTML = `Generations: ${generationsCount}`;
+                    selectedStar = null; // Clear selected star
+                }
+            });
+            // The spaceship's position and currentSpaceshipLocationStar are NOT changed here.
+            // It remains at its current location and continues to orbit that star.
+        }
+
+        /**
+         * Zooms the camera to the designated homeworld star.
+         */
+        function zoomToHomeworld() {
+            if (isGameOver) return; // Prevent interaction if game is over
+
+            if (homeworldStar) {
+                // Clear existing path lines and start a new path from homeworld
+                clearPathLines();
+                spaceshipPath.push(homeworldStar.position.clone()); // Add homeworld as the first point in the new path
+
+                selectedStar = homeworldStar; // Set homeworld as selected star for jump target
+                const starName = homeworldStar.userData.name;
+
+                infoPanel.innerHTML = `
+                    Generations: ${generationsCount}<br>
+                    <strong>${starName}</strong><br>
+                    <button id="jumpButton">Jump Spaceship Here</button>
+                `;
+                document.getElementById('jumpButton').addEventListener('click', jumpToSelectedStar, false);
+
+                zoomToStar(homeworldStar.position);
+            }
+        }
+
+        /**
+         * Makes the camera jump directly to the target star.
+         */
+        function goToTargetStar() {
+            if (isGameOver) return; // Prevent interaction if game is over
+
+            if (targetStar) {
+                zoomToStar(targetStar.position); // Zoom camera to target star
+                infoPanel.innerHTML = `Generations: ${generationsCount}<br>Camera is focused on <strong>${targetStar.userData.name}</strong>.<br>Click a star to jump the spaceship, or use 'Go to Target' to re-focus.`;
+            } else {
+                infoPanel.innerHTML = `Generations: ${generationsCount}<br>No target star found!`;
+            }
+        }
+
+        /**
+         * Handles keydown events to track which keys are pressed.
+         * @param {KeyboardEvent} event - The keydown event.
+         */
+        function onKeyDown(event) {
+            if (isGameOver) return; // Prevent interaction if game is over
+            keyboard[event.code] = true;
+        }
+
+        /**
+         * Handles keyup events to track when keys are released.
+         * @param {KeyboardEvent} event - The keyup event.
+         */
+        function onKeyUp(event) {
+            if (isGameOver) return; // Prevent interaction if game is over
+            keyboard[event.code] = false;
+        }
+
+        /**
+         * Handles touchstart event to record initial touch position.
+         * @param {TouchEvent} event - The touchstart event.
+         */
+        function onTouchStart(event) {
+            if (isGameOver) return; // Prevent interaction if game is over
+            if (event.touches.length === 1) { // Only consider single-finger touches for strafing
+                touchStartX = event.touches[0].clientX;
+                touchStartY = event.touches[0].clientY;
+                isSwiping = false; // Reset swipe flag at the start of a new touch
+            }
+        }
+
+        /**
+         * Handles touchmove event to update current touch position and detect if a swipe is in progress.
+         * @param {TouchEvent} event - The touchmove event.
+         */
+        function onTouchMove(event) {
+            if (isGameOver) return; // Prevent interaction if game is over
+            if (event.touches.length === 1) {
+                touchEndX = event.touches[0].clientX;
+                touchEndY = event.touches[0].clientY;
+                // If movement exceeds a small threshold, consider it a potential swipe
+                if (Math.abs(touchEndX - touchStartX) > swipeThreshold / 2 || Math.abs(touchEndY - touchStartY) > swipeThreshold / 2) {
+                    isSwiping = true;
+                }
+            }
+        }
+
+        /**
+         * Handles touchend event to process swipe gestures for camera movement.
+         * @param {TouchEvent} event - The touchend event.
+         */
+        function onTouchEnd(event) {
+            if (isGameOver) return; // Prevent interaction if game is over
+            if (isSwiping) {
+                const deltaX = touchEndX - touchStartX;
+                const deltaY = touchEndY - touchStartY;
+
+                const cameraDirection = new THREE.Vector3();
+                camera.getWorldDirection(cameraDirection);
+
+                const right = new THREE.Vector3().crossVectors(cameraDirection, camera.up);
+                const up = new THREE.Vector3().copy(camera.up);
+
+                // Determine dominant swipe direction and apply discrete strafe
+                if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > swipeThreshold) {
+                    // Horizontal swipe
+                    if (deltaX > 0) { // Swipe Right
+                        camera.position.addScaledVector(right, moveSpeed * 10); // Apply a larger discrete move
+                        controls.target.addScaledVector(right, moveSpeed * 10);
+                    } else { // Swipe Left
+                        camera.position.addScaledVector(right, -moveSpeed * 10);
+                        controls.target.addScaledVector(right, -moveSpeed * 10);
+                    }
+                } else if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > swipeThreshold) {
+                    // Vertical swipe
+                    if (deltaY > 0) { // Swipe Down (move camera up)
+                        camera.position.addScaledVector(up, -moveSpeed * 10);
+                        controls.target.addScaledVector(up, -moveSpeed * 10);
+                    } else { // Swipe Up (move camera down)
+                        camera.position.addScaledVector(up, moveSpeed * 10);
+                        controls.target.addScaledVector(up, moveSpeed * 10);
+                    }
+                }
+                controls.update(); // Update controls after manual position change
+            }
+            isSwiping = false; // Reset swipe flag
+        }
+
+
+        /**
+         * Updates camera position based on keyboard input.
+         */
+        function updateCameraMovement() {
+            if (isGameOver) return; // Prevent movement if game is over
+
+            const cameraDirection = new THREE.Vector3();
+            camera.getWorldDirection(cameraDirection); // Get the direction the camera is looking
+
+            const right = new THREE.Vector3().crossVectors(cameraDirection, camera.up); // Right vector relative to camera
+            const up = new THREE.Vector3().copy(camera.up); // Up vector relative to camera
+
+            let moved = false;
+            const currentCameraPosition = camera.position.clone();
+            const currentControlsTarget = controls.target.clone();
+
+            // Strafe Up/Down (W/Up Arrow, S/Down Arrow)
+            if (keyboard['KeyW'] || keyboard['ArrowUp']) {
+                currentCameraPosition.addScaledVector(up, moveSpeed); // Move along camera's up vector
+                currentControlsTarget.addScaledVector(up, moveSpeed);
+                moved = true;
+            }
+            if (keyboard['KeyS'] || keyboard['ArrowDown']) {
+                currentCameraPosition.addScaledVector(up, -moveSpeed); // Move along camera's negative up vector
+                currentControlsTarget.addScaledVector(up, -moveSpeed);
+                moved = true;
+            }
+
+            // Strafe Left/Right (A/Left Arrow, D/Right Arrow)
+            if (keyboard['KeyA'] || keyboard['ArrowLeft']) {
+                currentCameraPosition.addScaledVector(right, -moveSpeed);
+                currentControlsTarget.addScaledVector(right, -moveSpeed);
+                moved = true;
+            }
+            if (keyboard['KeyD'] || keyboard['ArrowRight']) {
+                currentCameraPosition.addScaledVector(right, moveSpeed);
+                currentControlsTarget.addScaledVector(right, moveSpeed);
+                moved = true;
+            }
+
+            // Apply the new positions if movement occurred
+            if (moved) {
+                camera.position.copy(currentCameraPosition);
+                controls.target.copy(currentControlsTarget);
+                controls.update(); // Update controls after manual position change
+            }
+        }
+
+        /**
+         * Updates the spaceship's position to orbit the star it is currently at, and orient it in the direction of travel.
+         */
+        function updateSpaceshipOrbit() {
+            if (isGameOver) return; // Stop orbit if game is over
+
+            // Orbit around the star the spaceship is currently at
+            if (currentSpaceshipLocationStar && spaceship) {
+                const orbitRadius = currentSpaceshipLocationStar.scale.x * 3; // Orbit radius based on current star's size
+                const orbitSpeed = 0.001; // Speed of orbit
+
+                const time = Date.now() * orbitSpeed;
+
+                // Store current position before updating to calculate direction of travel
+                const currentSpaceshipPosition = spaceship.position.clone();
+
+                // Calculate spaceship position around the current star
+                spaceship.position.x = currentSpaceshipLocationStar.position.x + Math.cos(time) * orbitRadius;
+                spaceship.position.y = currentSpaceshipLocationStar.position.y + Math.sin(time) * orbitRadius;
+                spaceship.position.z = currentSpaceshipLocationStar.position.z + Math.sin(time * 0.5) * orbitRadius * 0.5; // Slight vertical oscillation
+
+                // Calculate direction of travel
+                const directionOfTravel = new THREE.Vector3().subVectors(spaceship.position, currentSpaceshipPosition);
+
+                // Only update orientation if there's significant movement to avoid jitter when stationary
+                if (directionOfTravel.lengthSq() > 0.0001) { // Check squared length for performance
+                    // Make the spaceship look in the direction it is travelling
+                    // The spaceship's model is created such that its "front" (cone point) is along its local Z-axis.
+                    // We want to align this local Z-axis with the direction of travel.
+                    // The lookAt method by default points the object's positive Z-axis towards the target.
+                    // So, we make it look at a point that is 'directionOfTravel' away from its current position.
+                    spaceship.lookAt(spaceship.position.clone().add(directionOfTravel));
+                }
+
+                // Update previous position for the next frame's calculation
+                spaceship.previousPosition.copy(spaceship.position);
+            }
+        }
+
+        /**
+         * Clears all existing line segments from the pathLinesGroup and resets the spaceshipPath array.
+         */
+        function clearPathLines() {
+            while(pathLinesGroup.children.length > 0){
+                const child = pathLinesGroup.children[0];
+                child.geometry.dispose(); // Dispose of geometry to free up memory
+                child.material.dispose(); // Dispose of material to free up memory
+                pathLinesGroup.remove(child);
+            }
+            spaceshipPath = []; // Reset the path array
+        }
+
+        /**
+         * Makes the spaceship jump to the currently selected star.
+         */
+        function jumpToSelectedStar() {
+            if (isGameOver) return; // Prevent jump if game is over
+
+            if (selectedStar && spaceship) {
+                // Store the position of the star *before* the jump
+                const previousStarPosition = currentSpaceshipLocationStar.position.clone();
+
+                gsap.to(spaceship.position, {
+                    duration: 2.0, // Duration of the jump animation
+                    x: selectedStar.position.x,
+                    y: selectedStar.position.y,
+                    z: selectedStar.position.z,
+                    ease: "power2.inOut",
+                    onUpdate: () => {
+                        // Ensure spaceship looks at the target during the jump
+                        spaceship.lookAt(selectedStar.position);
+                    },
+                    onComplete: () => {
+                        // Color the target star the same color as the homeworld star
+                        if (selectedStar.material && homeworldColor) {
+                            // Only recolor if it's not the target star, or if it's the homeworld
+                            if (selectedStar !== targetStar || selectedStar === homeworldStar) {
+                                selectedStar.material.color.set(homeworldColor);
+                            } else {
+                                // If it's the target star, keep its target color
+                                selectedStar.material.color.set(targetColor);
+                            }
+                        }
+
+                        // Update current spaceship location *after* the jump is complete
+                        currentSpaceshipLocationStar = selectedStar;
+
+                        // Add the new star's position to the path
+                        spaceshipPath.push(currentSpaceshipLocationStar.position.clone());
+
+                        // Draw a line segment between the previous star and the current star
+                        if (spaceshipPath.length >= 2) {
+                            const points = [
+                                spaceshipPath[spaceshipPath.length - 2], // Previous star's position
+                                spaceshipPath[spaceshipPath.length - 1]  // Current star's position
+                            ];
+                            const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+                            // Use LineBasicMaterial for simple lines. linewidth might not work on all platforms.
+                            const lineMaterial = new THREE.LineBasicMaterial({ color: homeworldColor, linewidth: 3 });
+                            const line = new THREE.Line(lineGeometry, lineMaterial);
+                            pathLinesGroup.add(line); // Add the line to the group
+                        }
+
+                        // Calculate generations increase based on distance
+                        const distance = previousStarPosition.distanceTo(currentSpaceshipLocationStar.position);
+                        // Exponential increase, ensuring at least 1 generation for any jump
+                        const generationsIncrease = Math.max(1, Math.round(Math.exp(distance / 70) - 1));
+                        generationsCount += generationsIncrease;
+
+                        // Check for game over condition
+                        if (currentSpaceshipLocationStar === targetStar) {
+                            isGameOver = true;
+                            controls.enabled = false; // Disable camera controls
+                            infoPanel.innerHTML = `
+                                Generations: ${generationsCount}<br>
+                                <strong>GAME OVER! You reached the Target Star!</strong><br>
+                                <button id="playAgainButton">Play Again</button>
+                            `;
+                            document.getElementById('playAgainButton').addEventListener('click', () => {
+                                location.reload(); // Reload the page to restart the game
+                            });
+                        } else {
+                            // Update info panel to show current spaceship location and generations
+                            infoPanel.innerHTML = `
+                                Generations: ${generationsCount}<br>
+                                Last Jump Distance: ${distance.toFixed(2)} units<br>
+                                Generations Added: ${generationsIncrease}<br>
+                                Spaceship is at <strong>${currentSpaceshipLocationStar.userData.name}</strong>.<br>
+                                Click another star to jump, or Reset View.
+                            `;
+                        }
+
+                        // Clear selectedStar as it's no longer the *target*, but the *current location*.
+                        selectedStar = null;
+                    }
+                });
+            }
+        }
+
+        /**
+         * The main animation loop.
+         * This function is called repeatedly to render the scene and update animations.
+         */
+        function animate() {
+            if (isGameOver) {
+                // If game is over, only render the scene, do not update controls or spaceship
+                renderer.render(scene, camera);
+                return; // Stop requesting further animation frames
+            }
+
+            requestAnimationFrame(animate); // Request the next animation frame
+
+            controls.update(); // Update OrbitControls (for damping and smooth movement)
+            updateCameraMovement(); // Handle keyboard-based camera movement
+            updateSpaceshipOrbit(); // Update spaceship's orbit around its current star
+
+            renderer.render(scene, camera); // Render the scene with the camera
+        }
+
+        /**
+         * Function to start the game after the intro screen.
+         */
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none'; // Hide start screen
+            document.getElementById('gameCanvas').style.display = 'block'; // Show canvas
+            document.getElementById('controls-panel').style.display = 'flex'; // Show controls panel
+
+            initializeGameScene(); // Initialize the Three.js scene
+            animate(); // Start the animation loop
+        }
+
+        // Initial setup when the window loads
+        window.onload = function () {
+            // Attach event listener to the "Begin Journey" button
+            document.getElementById('startGameButton').addEventListener('click', startGame, false);
+        };
+    </script>
+</body>
+</html>

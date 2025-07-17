@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matchmaker</title>
+    <!-- D3.js library for force-directed graph visualization -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Google Fonts for 'Inter' to ensure consistent typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Basic body styling for a clean, centered layout */
+        body {
+            font-family: 'Inter', sans-serif; /* Apply Inter font */
+            background-color: #f0f2f5; /* Light grey background for a soft feel */
+            color: #333; /* Dark grey text for readability */
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrollbars, as the content is designed to fit */
+            display: flex; /* Use flexbox for centering */
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            min-height: 100vh; /* Ensure body takes full viewport height */
+        }
+        
+        /* Splash screen styling */
+        #splash-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            z-index: 300;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #splash-screen h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        #splash-screen p {
+            font-size: 1.2rem;
+            max-width: 500px;
+            margin-bottom: 2rem;
+        }
+        .slider-container {
+            margin: 1rem 0;
+            width: 80%;
+            max-width: 400px;
+        }
+        .slider-container label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        .slider-container input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        #start-game-btn {
+            margin-top: 2rem;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #6e8efb;
+            background-color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        #start-game-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Container for the SVG graph */
+        .graph-container {
+            width: 95vw;
+            height: 95vh;
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+            display: none; /* Hidden by default */
+        }
+        svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .link-line {
+            stroke-opacity: 0.6;
+            transition: stroke 0.3s ease, stroke-width 0.3s ease;
+        }
+        .node circle {
+            stroke: #fff;
+            stroke-width: 2px;
+            transition: transform 0.2s ease-in-out, fill 0.2s ease-in-out, stroke 0.2s;
+            filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.2));
+        }
+        .node:hover circle {
+            transform: scale(1.2);
+            stroke-width: 3px;
+        }
+        .node.highlight-strengthen circle {
+            stroke: gold;
+            stroke-width: 4px;
+        }
+        .node.highlight-weaken circle {
+            stroke: #e53e3e; /* Red for weaken mode */
+            stroke-width: 4px;
+        }
+        .node text {
+            pointer-events: none;
+            font-size: 12px;
+            font-weight: bold;
+            fill: #fff;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        .arrowhead {
+            pointer-events: none;
+        }
+
+        /* Info box styling */
+        #relationship-info-box {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            max-width: 250px;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 14px;
+            color: #333;
+        }
+        #relationship-info-box h3 {
+            margin: 0 0 10px 0;
+            color: #222;
+            font-size: 16px;
+        }
+        #relationship-info-box ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        #relationship-info-box li {
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        
+        /* Message box styling */
+        #message-box {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.75);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            z-index: 200;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s, visibility 0.5s, bottom 0.5s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        #message-box.show {
+            opacity: 1;
+            visibility: visible;
+            bottom: 50px;
+        }
+
+        /* Styling for the win dialog */
+        #win-dialog {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            color: #333;
+            padding: 2rem 3rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            z-index: 400;
+            text-align: center;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            border: 2px solid gold;
+        }
+        #win-dialog h2 {
+            font-size: 2rem;
+            color: #6e8efb;
+            margin-bottom: 1rem;
+        }
+        #win-dialog p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+        .win-dialog-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+        #win-dialog button {
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #restart-game-btn {
+            background-color: #6e8efb;
+            color: white;
+        }
+        #close-dialog-btn {
+            background-color: #e2e8f0;
+            color: #4a5568;
+        }
+        #win-dialog button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body>
+    <div id="splash-screen">
+        <h1>Matchmaker</h1>
+        <p>You are the town matchmaker. Your goal is to make sure everyone finds someone special.</p>
+        <div class="slider-container">
+            <label for="people-slider">Number of People: <span id="people-value">8</span></label>
+            <input type="range" id="people-slider" min="2" max="20" value="8">
+        </div>
+        <div class="slider-container">
+            <label for="event-slider">Random Event Frequency: <span id="event-value">10</span> seconds</label>
+            <input type="range" id="event-slider" min="1" max="20" value="10">
+        </div>
+        <button id="start-game-btn">Start Making Matches</button>
+    </div>
+
+    <div class="graph-container">
+        <svg id="relationship-graph"></svg>
+        <div id="relationship-info-box">
+            <h3 id="info-box-title"></h3>
+            <ul id="relationship-list"></ul>
+        </div>
+    </div>
+    
+    <div id="message-box"></div>
+
+    <div id="win-dialog">
+        <h2>Matchmaking Successful!</h2>
+        <p>You've successfully paired everyone up!</p>
+        <div class="win-dialog-buttons">
+            <button id="restart-game-btn">I rock! Let's do it again!</button>
+            <button id="close-dialog-btn">Yay! Let me take another look at my masterpiece!</button>
+        </div>
+    </div>
+
+    <script>
+        const splashScreen = document.getElementById('splash-screen');
+        const graphContainer = document.querySelector('.graph-container');
+        const startGameBtn = document.getElementById('start-game-btn');
+        const peopleSlider = document.getElementById('people-slider');
+        const eventSlider = document.getElementById('event-slider');
+        const peopleValueSpan = document.getElementById('people-value');
+        const eventValueSpan = document.getElementById('event-value');
+        const winDialog = document.getElementById('win-dialog');
+        const restartGameBtn = document.getElementById('restart-game-btn');
+        const closeDialogBtn = document.getElementById('close-dialog-btn');
+        let randomEventInterval;
+
+        // --- Event Listeners for Controls ---
+        peopleSlider.addEventListener('input', (e) => { peopleValueSpan.textContent = e.target.value; });
+        eventSlider.addEventListener('input', (e) => { eventValueSpan.textContent = e.target.value; });
+        
+        startGameBtn.addEventListener('click', () => {
+            splashScreen.style.display = 'none';
+            graphContainer.style.display = 'block';
+            const numNodes = parseInt(peopleSlider.value, 10);
+            const eventFrequency = parseInt(eventSlider.value, 10) * 1000;
+            if(randomEventInterval) clearInterval(randomEventInterval);
+            initializeGame(numNodes, eventFrequency);
+        });
+        
+        restartGameBtn.addEventListener('click', () => {
+            winDialog.style.display = 'none';
+            graphContainer.style.display = 'none';
+            splashScreen.style.display = 'flex';
+        });
+
+        closeDialogBtn.addEventListener('click', () => {
+            winDialog.style.display = 'none';
+        });
+
+        function initializeGame(numNodes, eventFrequency) {
+            d3.select("#relationship-graph").selectAll("*").remove();
+
+            const names = ["Alex", "Ben", "Chloe", "David", "Eva", "Frank", "Grace", "Henry", "Ivy", "Jack", "Kate", "Leo", "Mia", "Noah", "Olivia", "Paul", "Quinn", "Ruby", "Sam", "Tara"];
+            const nodes = Array.from({ length: numNodes }, (_, i) => ({ id: i, name: names[i] || `Person ${i + 1}` }));
+            const links = [];
+
+            nodes.forEach(sourceNode => {
+                const otherNodes = nodes.filter(n => n.id !== sourceNode.id);
+                const shuffledNodes = d3.shuffle(otherNodes.slice());
+                const numRelationships = Math.min(2, otherNodes.length); 
+                const relationships = shuffledNodes.slice(0, numRelationships);
+                relationships.forEach(targetNode => {
+                    if (!links.find(l => l.source === sourceNode.id && l.target === targetNode.id)) {
+                        links.push({ source: sourceNode.id, target: targetNode.id, score: Math.floor(Math.random() * 9) + 1 });
+                    }
+                    if (!links.find(l => l.source === targetNode.id && l.target === sourceNode.id) && Math.random() < 0.5) {
+                        links.push({ source: targetNode.id, target: sourceNode.id, score: Math.floor(Math.random() * 9) + 1 });
+                    }
+                });
+            });
+
+            const svg = d3.select("#relationship-graph");
+            let width = svg.node().getBoundingClientRect().width;
+            let height = svg.node().getBoundingClientRect().height;
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            const simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.id).distance(d => 350 - d.score * 15))
+                .force("charge", d3.forceManyBody().strength(-800))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .force("collide", d3.forceCollide().radius(40));
+
+            let linkGroup = svg.append("g").attr("class", "links").selectAll("g.link-group")
+                .data(links, l => `${l.source.id}-${l.target.id}`).enter().append("g").attr("class", "link-group");
+            linkGroup.append("line").attr("class", "link-line");
+            linkGroup.append("path").attr("class", "arrowhead").attr("d", "M -8,-4 L 0,0 L -8,4 Z").attr("fill", d => color(d.source.id));
+
+            const nodeElements = svg.append("g").attr("class", "nodes").selectAll("g")
+                .data(nodes).enter().append("g").attr("class", "node").call(drag(simulation));
+            nodeElements.append("circle").attr("r", 30).attr("fill", d => color(d.id));
+            nodeElements.append("text").attr("dy", "0.3em").attr("text-anchor", "middle").text(d => d.name);
+
+            let selectedNode = null;
+            const infoBox = d3.select("#relationship-info-box");
+            const relationshipList = d3.select("#relationship-list");
+            const messageBox = d3.select("#message-box");
+            let messageTimeout;
+
+            function hideInfoBox() { infoBox.style("display", "none"); }
+            function showRelationshipInfo(event, d) {
+                infoBox.style("display", "flex").select("#info-box-title").text(`${d.name}'s Relationships`);
+                relationshipList.html("");
+                links.filter(l => l.source.id === d.id).forEach(link => relationshipList.append("li").text(`→ ${link.target.name} (Score: ${link.score})`));
+                links.filter(l => l.target.id === d.id).forEach(link => relationshipList.append("li").text(`← ${link.source.name} (Score: ${link.score})`));
+            }
+            function showMessage(message) {
+                clearTimeout(messageTimeout);
+                messageBox.text(message).classed("show", true);
+                messageTimeout = setTimeout(() => messageBox.classed("show", false), 2500);
+            }
+
+            function updateLinkAppearance() {
+                const strongestScores = new Map();
+                nodes.forEach(node => {
+                    const outboundLinks = links.filter(l => l.source.id === node.id);
+                    strongestScores.set(node.id, d3.max(outboundLinks, l => l.score));
+                });
+                svg.selectAll('.link-line').attr('stroke-width', d => {
+                    const reciprocalLink = links.find(l => l.source.id === d.target.id && l.target.id === d.source.id);
+                    const isStrongestForSource = d.score > 0 && d.score === strongestScores.get(d.source.id);
+                    if (reciprocalLink && isStrongestForSource && reciprocalLink.score === strongestScores.get(d.target.id)) return 4;
+                    return 2;
+                }).attr('stroke', d => {
+                    const reciprocalLink = links.find(l => l.source.id === d.target.id && l.target.id === d.source.id);
+                    const isStrongestForSource = d.score > 0 && d.score === strongestScores.get(d.source.id);
+                    if (reciprocalLink && isStrongestForSource && reciprocalLink.score === strongestScores.get(d.target.id)) return 'gold';
+                    if (isStrongestForSource) return color(d.source.id);
+                    return '#999';
+                });
+            }
+
+            function checkWinCondition() {
+                const strongestScores = new Map();
+                nodes.forEach(node => {
+                    const outboundLinks = links.filter(l => l.source.id === node.id);
+                    strongestScores.set(node.id, d3.max(outboundLinks, l => l.score) || 0);
+                });
+
+                const goldenLinkCounts = new Map();
+                nodes.forEach(node => goldenLinkCounts.set(node.id, 0));
+                const processedPairs = new Set();
+
+                links.forEach(link => {
+                    const sourceId = link.source.id;
+                    const targetId = link.target.id;
+                    const pairKey = sourceId < targetId ? `${sourceId}-${targetId}` : `${targetId}-${sourceId}`;
+                    if (processedPairs.has(pairKey)) return;
+
+                    const reciprocalLink = links.find(l => l.source.id === targetId && l.target.id === sourceId);
+                    if (!reciprocalLink) return;
+
+                    const isStrongestForSource = link.score > 0 && link.score === strongestScores.get(sourceId);
+                    const isStrongestForTarget = reciprocalLink.score > 0 && reciprocalLink.score === strongestScores.get(targetId);
+
+                    if (isStrongestForSource && isStrongestForTarget) {
+                        goldenLinkCounts.set(sourceId, goldenLinkCounts.get(sourceId) + 1);
+                        goldenLinkCounts.set(targetId, goldenLinkCounts.get(targetId) + 1);
+                    }
+                    processedPairs.add(pairKey);
+                });
+
+                let nodesWithWrongCount = 0;
+                goldenLinkCounts.forEach(count => { if (count !== 1) nodesWithWrongCount++; });
+
+                const winConditionMet = (nodes.length % 2 === 0) ? (nodesWithWrongCount === 0) : (nodesWithWrongCount === 1);
+
+                if (winConditionMet) {
+                    clearInterval(randomEventInterval);
+                    winDialog.style.display = 'flex';
+                }
+            }
+
+            function handleClick(event, d) {
+                if (!d.isClick) return;
+                const clickedElement = d3.select(event.currentTarget);
+
+                if (selectedNode && selectedNode.node !== d) {
+                    let existingLink = links.find(l => l.source.id === selectedNode.node.id && l.target.id === d.id);
+                    let scoreChange = selectedNode.mode === 'strengthen' ? Math.floor(Math.random() * 5) - 1 : Math.floor(Math.random() * 5) - 3;
+                    
+                    if (existingLink) {
+                        existingLink.score = Math.max(1, Math.min(9, existingLink.score + scoreChange));
+                        let desc = scoreChange > 0 ? `increased` : (scoreChange < 0 ? `decreased` : `remained the same`);
+                        showMessage(`Relationship from ${selectedNode.node.name} to ${d.name} ${desc} to ${existingLink.score}!`);
+                    } else {
+                        links.push({ source: selectedNode.node.id, target: d.id, score: Math.max(1, 5 + scoreChange) });
+                        showMessage(`New relationship formed from ${selectedNode.node.name} to ${d.name}!`);
+                    }
+                    
+                    svg.selectAll(".node").classed("highlight-strengthen highlight-weaken", false);
+                    selectedNode = null;
+                    
+                    let currentLinkSelection = svg.select(".links").selectAll("g.link-group").data(links, l => `${l.source.id}-${l.target.id}`);
+                    currentLinkSelection.exit().remove();
+                    const newLinkGroups = currentLinkSelection.enter().append("g").attr("class", "link-group");
+                    newLinkGroups.append("line").attr("class", "link-line");
+                    newLinkGroups.append("path").attr("class", "arrowhead").attr("d", "M -8,-4 L 0,0 L -8,4 Z").attr("fill", d => color(d.source.id));
+                    linkGroup = newLinkGroups.merge(currentLinkSelection);
+                    simulation.force("link").links(links);
+                    simulation.alpha(1).restart();
+                    updateLinkAppearance();
+                    checkWinCondition();
+                } else if (selectedNode && selectedNode.node === d) {
+                    if (selectedNode.mode === 'strengthen') {
+                        selectedNode.mode = 'weaken';
+                        clickedElement.classed('highlight-strengthen', false).classed('highlight-weaken', true);
+                    } else {
+                        selectedNode = null;
+                        clickedElement.classed('highlight-weaken', false);
+                    }
+                } else {
+                    svg.selectAll(".node").classed("highlight-strengthen highlight-weaken", false);
+                    selectedNode = { node: d, mode: 'strengthen' };
+                    clickedElement.classed('highlight-strengthen', true);
+                }
+            }
+
+            function handleRandomEvent() {
+                if (nodes.length < 2) return;
+                let sourceNode = nodes[Math.floor(Math.random() * nodes.length)];
+                let targetNode = nodes[Math.floor(Math.random() * nodes.length)];
+                while (sourceNode === targetNode) targetNode = nodes[Math.floor(Math.random() * nodes.length)];
+
+                let existingLink = links.find(l => l.source.id === sourceNode.id && l.target.id === targetNode.id);
+                if (existingLink) {
+                    const scoreChange = Math.floor(Math.random() * 5) - 1;
+                    existingLink.score = Math.max(1, Math.min(9, existingLink.score + scoreChange));
+                    let desc = scoreChange > 0 ? `increased` : (scoreChange < 0 ? `decreased` : `remained the same`);
+                    showMessage(`Random event: ${sourceNode.name}'s feelings for ${targetNode.name} ${desc} to ${existingLink.score}!`);
+                } else {
+                    links.push({ source: sourceNode.id, target: targetNode.id, score: 1 });
+                    showMessage(`Random event: ${sourceNode.name} developed feelings for ${targetNode.name}!`);
+                }
+                
+                let currentLinkSelection = svg.select(".links").selectAll("g.link-group").data(links, l => `${l.source.id}-${l.target.id}`);
+                currentLinkSelection.exit().remove();
+                const newLinkGroups = currentLinkSelection.enter().append("g").attr("class", "link-group");
+                newLinkGroups.append("line").attr("class", "link-line");
+                newLinkGroups.append("path").attr("class", "arrowhead").attr("d", "M -8,-4 L 0,0 L -8,4 Z").attr("fill", d => color(d.source.id));
+                linkGroup = newLinkGroups.merge(currentLinkSelection);
+                simulation.force("link").links(links);
+                simulation.alpha(1).restart();
+                updateLinkAppearance();
+                checkWinCondition();
+            }
+
+            simulation.on("tick", () => {
+                linkGroup.each(function(d) {
+                    const line = d3.select(this).select(".link-line"), arrow = d3.select(this).select(".arrowhead");
+                    const sx = d.source.x, sy = d.source.y, tx = d.target.x, ty = d.target.y;
+                    line.attr("x1", sx).attr("y1", sy).attr("x2", tx).attr("y2", ty);
+                    const midX = (sx + tx) / 2, midY = (sy + ty) / 2;
+                    const angle = Math.atan2(ty - sy, tx - sx) * 180 / Math.PI;
+                    const scale = 0.8 + d.score * 0.1;
+                    arrow.attr("transform", `translate(${midX},${midY}) rotate(${angle}) scale(${scale})`);
+                });
+                nodeElements.attr("transform", d => `translate(${d.x},${d.y})`);
+            });
+
+            function drag(simulation) {
+                function dragstarted(event, d) {
+                    d.isClick = true;
+                    if (!event.active) simulation.alphaTarget(0.3).restart();
+                    d.fx = d.x; d.fy = d.y;
+                }
+                function dragged(event, d) { d.isClick = false; d.fx = event.x; d.fy = event.y; }
+                function dragended(event, d) {
+                    if (!event.active) simulation.alphaTarget(0);
+                    d.fx = null; d.fy = null;
+                }
+                return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
+            }
+            
+            window.addEventListener('resize', () => {
+                width = svg.node().getBoundingClientRect().width;
+                height = svg.node().getBoundingClientRect().height;
+                simulation.force("center", d3.forceCenter(width / 2, height / 2)).alpha(0.3).restart();
+            });
+
+            nodeElements.on("click", handleClick);
+            nodeElements.on("mouseover", showRelationshipInfo);
+            nodeElements.on("mouseout", hideInfoBox);
+
+            updateLinkAppearance();
+            randomEventInterval = setInterval(handleRandomEvent, eventFrequency);
+        }
+    </script>
+<script>
+  window.Userback = window.Userback || {};
+  Userback.access_token = "A-GEvGLtYN3F2l9XNckTyWccHGL";
+  (function(d) {
+    var s = d.createElement('script');s.async = true;s.src = 'https://static.userback.io/widget/v1.js';(d.head || d.body).appendChild(s);
+  })(document);
+</script>
+</body>
+</html>

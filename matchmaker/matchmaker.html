@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-FRB67X5HNC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date()); 
+
+  gtag('config', 'G-FRB67X5HNC');
+</script>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matchmaker!</title>
+    <!-- D3.js library for force-directed graph visualization -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Google Fonts for 'Inter' to ensure consistent typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+    <div id="splash-screen">
+        <h1>Matchmaker</h1>
+        <p>You are the town matchmaker, making sure everyone finds someone special!<br><br>
+        To give someone a little nudge, click on them and then click on the person you're keen for them to notice.  To cool someone off, click twice on them and then click on the person you want to like less.</p>
+        <div class="slider-container">
+            <label for="people-slider">There are <span id="people-value">8</span> people in your sights.</label>
+            <input type="range" id="people-slider" min="2" max="20" value="8">
+        </div>
+        <div class="slider-container">
+            <label for="event-slider">Random Events every <span id="event-value">10</span> seconds.</label>
+            <input type="range" id="event-slider" min="1" max="20" value="10">
+        </div>
+        <!-- Added new feedback text below the sliders -->
+        <p class="feedback-text">This game is very young, so it might misbehave! We would love to hear your thoughts, so please click on the Feedback button in the bottom right corner to let us know about any problems or any changes you'd like to see.</p>
+        <button id="start-game-btn">Let's Go!</button>
+    </div>
+
+    <div class="graph-container">
+        <svg id="relationship-graph"></svg>
+        <div id="relationship-info-box">
+            <h3 id="info-box-title"></h3>
+            <ul id="relationship-list"></ul>
+        </div>
+    </div>
+    
+    <div id="message-box"></div>
+
+    <div id="win-dialog">
+        <h2>Matchmaking Successful!</h2>
+        <p>You've successfully paired everyone up!</p>
+        <div class="win-dialog-buttons">
+            <button id="restart-game-btn">I rock! Let's do it again!</button>
+            <button id="close-dialog-btn">Yay! Let me take another look at my masterpiece!</button>
+        </div>
+    </div>
+
+<script src="js/script.js"></script>
+<script>
+  // Userback widget integration (for feedback)
+  window.Userback = window.Userback || {};
+  Userback.access_token = "A-GEvGLtYN3F2l9XNckTyWccHGL";
+  (function(d) {
+    var s = d.createElement('script');s.async = true;s.src = 'https://static.userback.io/widget/v1.js';(d.head || d.body).appendChild(s);
+  })(document);
+</script>
+</body>
+</html>

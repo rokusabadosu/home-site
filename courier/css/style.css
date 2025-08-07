@@ -1,0 +1,144 @@
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+        #gameCanvas {
+            background-color: #3b82f6; /* Changed to blue, same as lakes */
+            display: block; /* Removes extra space below canvas */
+            width: 100vw;
+            height: 100vh;
+            cursor: grab; /* Show a grab cursor */
+        }
+        #gameCanvas:active {
+            cursor: grabbing; /* Show a grabbing cursor when dragging */
+        }
+        #statsContainer {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: flex;
+            gap: 0px; /* Space between counters */
+            z-index: 12; /* Ensure it's above modals */
+        }
+        #statsContainer > div {
+            color: white;
+            font-size: 20px;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.7); /* Optional background for better visibility */
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            position: static; /* This ensures the counters are part of the flex layout */
+        }
+        #activeQuestDisplay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            font-size: 18px;
+            z-index: 10;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
+            display: none; /* Hidden by default */
+        }
+        #gameOverScreen, #townScreen, #monsterEncounterScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none; /* Initially hidden */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 11; /* Sit on top of everything */
+            color: white;
+            font-size: 24px;
+        }
+        #gameOverScreen h2, #townScreen h2, #monsterEncounterScreen h2 {
+            font-size: 36px;
+            margin-bottom: 20px;
+        }
+        #gameOverScreen button, #townScreen button, #monsterEncounterScreen button {
+            background-color: #4CAF50; /* Green */
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: background-color 0.3s ease;
+        }
+        #gameOverScreen button:hover, #townScreen button:hover, #monsterEncounterScreen button:hover {
+            background-color: #367c39; /* Darker green */
+        }
+        #townScreen button.bg-red-500, #monsterEncounterScreen button.bg-red-500 {
+            background-color: #ef4444; /* Red for close button */
+        }
+        #townScreen button.bg-red-500:hover, #monsterEncounterScreen button.bg-red-500:hover {
+            background-color: #dc2626; /* Darker red */
+        }
+        .delivery-button {
+            background-color: #3498db; /* Blue for delivery buttons */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            margin-bottom: 10px;
+            width: 90%; /* Make buttons wider - CHANGED */
+            max-width: 500px; /* Increased max width - CHANGED */
+            transition: background-color 0.3s ease;
+        }
+        .delivery-button:hover {
+            background-color: #217dbb; /* Darker blue */
+        }
+        #noDeliveryButton {
+            background-color: #6b7280; /* Gray for no delivery */
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            margin-top: 10px;
+            width: 90%; /* Make buttons wider - CHANGED */
+            max-width: 500px; /* Increased max width - CHANGED */
+            transition: background-color 0.3s ease;
+        }
+        #noDeliveryButton:hover {
+            background-color: #4b5563; /* Darker gray */
+        }
+
+        #messageDisplay {
+            position: absolute;
+            top: 50%; /* Changed from bottom */
+            left: 50%; /* Center horizontally */
+            transform: translate(-50%, -50%); /* Adjust for perfect centering */
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 18px;
+            z-index: 12;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            max-width: 80%; /* Limit width for long messages */
+            text-align: center;
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+        #messageDisplay.show-message {
+            opacity: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .hide-message {
+            opacity: 0;
+            /* Transition will handle the fade out, then display: none after transition */
+        }

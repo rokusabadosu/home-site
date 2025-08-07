@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Courier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="bg-gray-100 overflow-hidden">
+    <canvas id="gameCanvas"></canvas>
+    <div id="statsContainer">
+        <div id="dayCounter">
+            <img src="images/day.png" alt="Days:" class="h-5 w-5 mr-2" title="Days Passed">
+            <span id="dayValue">0</span>
+        </div>
+        <div id="healthCounter">
+            <img src="images/heart.png" alt="Health:" class="h-5 w-5 mr-2" title="Health">
+            <span id="healthValue">100</span>
+        </div>
+        <div id="foodCounter">
+            <img src="images/food.png" alt="Food:" class="h-5 w-5 mr-2" title="Food">
+            <span id="foodValue">100</span>
+        </div>
+        <div id="goldCounter">
+            <img src="images/gold.png" alt="Gold:" class="h-5 w-5 mr-2" title="Gold">
+            <span id="goldValue">0</span>
+        </div>
+    </div>
+    <div id="activeQuestDisplay"></div>
+
+    <div id="gameOverScreen">
+        <h2>Game Over</h2>
+        <p id="gameOverReason">You have run out of food!</p>
+        <button id="restartButton">Restart</button>
+    </div>
+
+    <div id="townScreen">
+        <h2 id="townNameDisplay" class="text-4xl mb-4"></h2>
+        <p class="mb-4">Welcome to the town!</p>
+        <div class="flex flex-col md:flex-row items-center md:items-start justify-center space-y-8 md:space-y-0 md:space-x-8 mb-4 w-full">
+            <div class="flex flex-col items-center">
+                <label for="foodBuySlider" class="mb-2">Buy Food:</label>
+                <input type="range" id="foodBuySlider" min="0" max="0" value="0" step="10" class="w-64 accent-green-500">
+                <p id="sliderFoodAmount" class="mt-2">0 Food</p>
+                <p id="sliderGoldCost" class="mt-1">0 Gold</p>
+                <button id="buyFoodButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transition duration-300 ease-in-out transform hover:scale-105 mt-4">Buy Food</button>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <label for="healthHealSlider" class="mb-2">Heal Health:</label>
+                <input type="range" id="healthHealSlider" min="0" max="0" value="0" step="2" class="w-64 accent-red-500">
+                <p id="sliderHealthAmount" class="mt-2">0 Health</p>
+                <p id="sliderHealCost" class="mt-1">0 Gold</p>
+                <button id="healHealthButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transition duration-300 ease-in-out transform hover:scale-105 mt-4">Heal Health</button>
+            </div>
+        </div>
+
+        <div id="deliveryOptions" class="flex flex-col items-center mb-4 w-full">
+            <p class="mb-2">Available Deliveries:</p>
+            <button id="deliveryOption1" class="delivery-button"></button>
+            <button id="deliveryOption2" class="delivery-button"></button>
+            <button id="deliveryOption3" class="delivery-button"></button>
+        </div>
+
+        <button id="closeTownButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transition duration-300 ease-in-out transform hover:scale-105">Close Town Screen</button>
+    </div>
+
+    <div id="monsterEncounterScreen">
+        <h2 id="monsterName" class="text-4xl mb-4"></h2>
+        <p id="monsterHealth" class="mb-2"></p>
+        <p id="monsterMessage" class="mb-6 text-xl"></p>
+        <div class="flex space-x-4">
+            <button id="fightButton" class="bg-red-600 hover:bg-red-800 text-white font-bold py-3 px-6 rounded-md shadow-lg transition duration-300 ease-in-out transform hover:scale-105">Fight!</button>
+            <button id="runButton" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-md shadow-lg transition duration-300 ease-in-out transform hover:scale-105">Run Away!</button>
+        </div>
+    </div>
+
+    <div id="messageDisplay" class="hide-message"></div>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

@@ -41,10 +41,14 @@
         const foodPerGoldUnit = 10; // 10 food for 1 gold (so 1 gold buys 10 food)
         const healthPerGoldUnitHeal = 2; // 2 health for 1 gold (so 0.5 gold per 1 health)
 
-        let currentQuest = null; // Stores { targetX, targetY, reward, targetTownName }
+        let activeQuests = []; // Stores an array of quest objects
         const deliveryRewardFactor = 2; // Gold per unit distance for delivery quests
         const minDeliveryDistance = 5; // Minimum distance for a delivery quest
         const maxDeliveryAttempts = 10; // Max attempts to find a suitable delivery town
+        const maxActiveQuests = 3; // Max number of quests player can have
+
+        // Victory Condition
+         let retirementGoal = { townName: null, goldAmount: 100, x: null, y: null };
 
         // Monster encounter variables
         let turnsInHazardousTerrain = 0;
@@ -74,6 +78,14 @@
         const gameOverScreen = document.getElementById('gameOverScreen');
         const restartButton = document.getElementById('restartButton');
         const gameOverReason = document.getElementById('gameOverReason');
+
+        // Victory screen elements
+        const victoryScreen = document.getElementById('victoryScreen');
+        const victoryTownName = document.getElementById('victoryTownName');
+        const restartButtonVictory = document.getElementById('restartButtonVictory');
+        const retirementTownNameDisplay = document.getElementById('retirementTownName');
+        const retirementGoldAmountDisplay = document.getElementById('retirementGoldAmount');
+
         const messageDisplay = document.getElementById('messageDisplay');
         let messageTimeout;
 
@@ -81,15 +93,11 @@
         const townScreen = document.getElementById('townScreen');
         const townNameDisplay = document.getElementById('townNameDisplay');
         const foodBuySlider = document.getElementById('foodBuySlider');
-        const sliderFoodAmountDisplay = document.getElementById('sliderFoodAmount');
-        const sliderGoldCostDisplay = document.getElementById('sliderGoldCost');
         const buyFoodButton = document.getElementById('buyFoodButton');
         const closeTownButton = document.getElementById('closeTownButton');
 
         // New Health Healing elements
         const healthHealSlider = document.getElementById('healthHealSlider');
-        const sliderHealthAmountDisplay = document.getElementById('sliderHealthAmount');
-        const sliderHealCostDisplay = document.getElementById('sliderHealCost');
         const healHealthButton = document.getElementById('healHealthButton');
 
         // Delivery quest elements
@@ -143,7 +151,8 @@
          * @param {number} duration - The duration in milliseconds to display the message.
          */
         function showMessage(message, duration = 2500) {
-            clearTimeout(messageTimeout); // Clear any existing timeout
+            clearTimeout(messageTimeout);
+            messageDisplay.style.display = ''; // Reset inline display style to allow CSS classes to take over
             messageDisplay.textContent = message;
             messageDisplay.classList.remove('hide-message');
             messageDisplay.classList.add('show-message');
@@ -151,13 +160,11 @@
             messageTimeout = setTimeout(() => {
                 messageDisplay.classList.remove('show-message');
                 messageDisplay.classList.add('hide-message');
-                // After the fade-out, set display to none to remove from layout
-                messageDisplay.addEventListener('transitionend', function handler() {
-                    if (messageDisplay.classList.contains('hide-message')) {
-                        messageDisplay.style.display = 'none';
-                        messageDisplay.removeEventListener('transitionend', handler);
-                    }
-                });
+                // After the fade-out transition, set display to none to remove from layout.
+                // The { once: true } option automatically removes the listener after it runs.
+                messageDisplay.addEventListener('transitionend', () => {
+                    messageDisplay.style.display = 'none';
+                }, { once: true });
             }, duration);
         }
 
@@ -165,18 +172,58 @@
          * Updates the active quest display on the top right.
          */
         function updateActiveQuestDisplay() {
-            if (currentQuest) {
-                activeQuestDisplay.innerHTML = `
-                    <img src="images/delivery.png" alt="Deliver to:" class="h-5 w-5 mr-2" title="Delivery Quest">
-                    <span>${currentQuest.targetTownName} (${currentQuest.reward}</span>
-                    <img src="images/gold.png" alt="Gold" class="h-5 w-5 ml-1" title="Gold">)
-                `;
-                activeQuestDisplay.style.display = 'flex';
-                activeQuestDisplay.style.alignItems = 'center';
-
+            if (activeQuests.length > 0) {
+                let questHTML = '<ul>';
+                activeQuests.forEach(quest => {
+                    questHTML += `
+                        <li class="quest-item">
+                            <img src="images/delivery.png" alt="Deliver to:" class="h-5 w-5 mr-2" title="Delivery Quest">
+                            <span>${quest.targetTownName}: ${quest.reward}</span>
+                            <img src="images/gold.png" alt="Gold" class="h-5 w-5 ml-1" title="Gold">
+                        </li>
+                    `;
+                });
+                questHTML += '</ul>';
+                activeQuestDisplay.innerHTML = questHTML;
+                activeQuestDisplay.style.display = 'block';
             } else {
                 activeQuestDisplay.style.display = 'none';
+            }
+        }
 
+        /**
+         * Updates active quests based on the number of days passed.
+         * Reduces rewards and removes expired quests.
+         * @param {number} daysPassed - The number of days that have passed.
+         */
+        function updateQuestTimers(daysPassed) {
+            if (activeQuests.length === 0) return;
+
+            const expiredQuests = [];
+            let questsUpdated = false;
+
+            activeQuests.forEach(quest => {
+                const oldReward = quest.reward;
+                quest.reward = Math.max(0, quest.reward - daysPassed);
+                if (quest.reward !== oldReward) {
+                    questsUpdated = true;
+                }
+                // Only trigger expiry on the turn the reward drops to 0
+                if (quest.reward <= 0 && oldReward > 0) {
+                    expiredQuests.push(quest);
+                }
+            });
+
+            if (expiredQuests.length > 0) {
+                expiredQuests.forEach(quest => {
+                    showMessage(`You were too slow to deliver to ${quest.targetTownName}. The quest has expired.`, 3500);
+                });
+                activeQuests = activeQuests.filter(quest => !expiredQuests.includes(quest));
+            }
+
+            // Update the display if any quest reward changed or a quest expired.
+            if (questsUpdated) {
+                updateActiveQuestDisplay();
             }
         }
 
@@ -185,6 +232,7 @@
          */
         function gameOver() {
             gameOverScreen.style.display = 'flex'; //show game over screen
+            victoryScreen.style.display = 'none'; // Hide victory screen if somehow open
             townScreen.style.display = 'none'; // Hide town screen if open
             monsterEncounterScreen.style.display = 'none'; // Hide monster screen if open
             // Disable input
@@ -278,27 +326,15 @@
          * Centers the view on the player's starting position.
          */
         function initializePlayer() {
-            let openSpaces = [];
-
-            // Collect all empty spaces
-            for (let y = 0; y < mapHeight; y++) {
-                for (let x = 0; x < mapWidth; x++) {
-                    if (mapData[y][x] === 0) { // Only place player on open space
-                        openSpaces.push({ x: x, y: y });
-                    }
-                }
-            }
-
-            if (openSpaces.length > 0) {
-                // Choose a random open space
-                const randomIndex = Math.floor(Math.random() * openSpaces.length);
-                playerX = openSpaces[randomIndex].x;
-                playerY = openSpaces[randomIndex].y;
+            // Start the player in their designated retirement town.
+            if (retirementGoal.townName && retirementGoal.x !== null && retirementGoal.y !== null) {
+                playerX = retirementGoal.x;
+                playerY = retirementGoal.y;
             } else {
-                // Fallback if no open space found (shouldn't happen with current generation)
+                // Fallback if retirement goal isn't set (should not happen in normal flow)
                 playerX = Math.floor(mapWidth / 2);
                 playerY = Math.floor(mapHeight / 2);
-                console.warn("No open space found for player, placing at center.");
+                console.error("Could not find retirement town to start. Placing player at center.");
             }
 
             // Calculate the offset to center the map on the player
@@ -307,8 +343,8 @@
         }
 
         // Arrays for generating town names. Prefixes are capitalized, suffixes are not.
-        const townPrefixes = ["River", "Brook", "Creek", "Lake", "Falls", "Spring", "Stone", "Iron", "Fair", "West", "High", "Dog", "Spoon", "Witching", "Dragon"];
-        const townSuffixes = ["wood", "forest", "grove", "meadow", "hill", "mountain", "dale", "field", "town", "village", "burg", "port", "haven", "shire", "view", "crest", "muth", "ford", "stead", "gate", "crossing", "bridge", "bend", "point", "ridge", "vale", "brook", "spring", "well", "stone", "rock"];
+        const townPrefixes = ["River", "Brook", "Creek", "Lake", "Falls", "Spring", "Stone", "Iron", "Fair", "West", "High", "Dog", "Spoon", "Witching", "Dragon", "Tap"];
+        const townSuffixes = ["wood", "forest", "grove", "meadow", "hill", "mount", "dale", "field", "town", "ville", "burg", "port", "haven", "shire", "view", "crest", "muth", "ford", "stead", "gate", "bridge", "bend", "point", "ridge", "vale", "brook", "spring", "well", "ston", "rock"];
 
         /**
          * Generates a random, unique town name.
@@ -374,9 +410,16 @@
                                 ctx.fillStyle = '#ffffff'; // White for other towns
                                 ctx.fillRect(drawX, drawY, drawSize, drawSize);
                             }
-                            if (currentQuest && x === currentQuest.targetX && y === currentQuest.targetY) {
+                            const isQuestTarget = activeQuests.some(quest => x === quest.targetX && y === quest.targetY);
+                            if (isQuestTarget) {
                                 ctx.fillStyle = 'rgba(255, 255, 0, 0.5)'; // Yellow highlight for quest target town
                                 ctx.fillRect(drawX, drawY, drawSize, drawSize);
+                            }
+                            // Add a border for the retirement town
+                            if (x === retirementGoal.x && y === retirementGoal.y) {
+                                ctx.strokeStyle = '#FFFFE0'; // Light Yellow
+                                ctx.lineWidth = 3;
+                                ctx.strokeRect(drawX, drawY, gridSize, gridSize);
                             }
                             break;
                         case 5:
@@ -464,8 +507,9 @@
                     const randomIndex = Math.floor(Math.random() * townCoordinates.length);
                     const potentialTargetTown = townCoordinates[randomIndex];
 
-                    // Ensure target town is not the current town and is far enough
-                    if (potentialTargetTown.x !== currentTownCoords.x || potentialTargetTown.y !== currentTownCoords.y) {
+                    // Ensure target town is not the current town, not already a quest target, and is far enough
+                    const isAlreadyQuestTarget = activeQuests.some(q => q.targetX === potentialTargetTown.x && q.targetY === potentialTargetTown.y);
+                    if ((potentialTargetTown.x !== currentTownCoords.x || potentialTargetTown.y !== currentTownCoords.y) && !isAlreadyQuestTarget) {
                         const dist = calculateDistance(currentTownCoords.x, currentTownCoords.y, potentialTargetTown.x, potentialTargetTown.y);
                         if (dist >= minDeliveryDistance) {
                             targetTown = potentialTargetTown;
@@ -477,7 +521,7 @@
                 }
 
                 if (targetTown) {
-                    const reward = Math.floor(distance * deliveryRewardFactor);
+                    const reward = Math.floor(distance * deliveryRewardFactor * 1.5); // 50% bonus to initial reward
                     availableQuests.push({
                         targetX: targetTown.x,
                         targetY: targetTown.y,
@@ -492,16 +536,17 @@
             }
             // Populate buttons
             availableQuests.forEach((quest, index) => {
+                const button = deliveryOptionButtons[index];
                 if (quest) {
-                    // Removed "units" from the display string
-                    deliveryOptionButtons[index].textContent = `Deliver to ${quest.targetTownName} for ${quest.reward} Gold`;
-                    deliveryOptionButtons[index].onclick = () => takeDeliveryQuest(index);
-                    deliveryOptionButtons[index].style.display = 'block';
+                    button.textContent = `Deliver to ${quest.targetTownName} (${quest.reward} Gold)`;
+                    button.onclick = () => takeDeliveryQuest(index);
+                    button.disabled = false; // Re-enable the button for a new quest
+                    button.style.display = 'block';
                 } else {
-                    deliveryOptionButtons[index].textContent = `No delivery available`;
-                    deliveryOptionButtons[index].onclick = null;
-                    deliveryOptionButtons[index].disabled = true; // Disable if no quest
-                    deliveryOptionButtons[index].style.display = 'block';
+                    button.textContent = `No delivery available`;
+                    button.onclick = null;
+                    button.disabled = true; // Disable if no quest
+                    button.style.display = 'block';
                 }
             });
         }
@@ -511,10 +556,56 @@
          * @param {number} questIndex - The index of the selected quest in availableQuests.
          */
         function takeDeliveryQuest(questIndex) {
-            currentQuest = availableQuests[questIndex];
-            showMessage(`Quest accepted: Deliver to ${currentQuest.targetTownName}!`, 3000);
+            if (activeQuests.length >= maxActiveQuests) {
+                showMessage(`Your quest log is full!`, 2500);
+                return;
+            }
+            const newQuest = availableQuests[questIndex];
+            activeQuests.push(newQuest);
+            showMessage(`Quest accepted: Deliver to ${newQuest.targetTownName}!`, 3000);
             updateActiveQuestDisplay();
-            closeTownScreen();
+            
+            // Disable the button for the quest just taken
+            deliveryOptionButtons[questIndex].disabled = true;
+            deliveryOptionButtons[questIndex].textContent = `Quest Taken`;
+            deliveryOptionButtons[questIndex].onclick = null;
+
+            // If quest log is now full, disable other available quests
+            if (activeQuests.length >= maxActiveQuests) {
+                deliveryOptionButtons.forEach((button) => {
+                    if (!button.disabled) { // Only affect buttons that are still active
+                        button.disabled = true;
+                        button.textContent = `Quest Log Full`;
+                        button.onclick = null;
+                    }
+                });
+            }
+        }
+        /**
+         * Sets up the retirement goal by selecting a random town.
+         */
+        function setupRetirementGoal() {
+            if (townCoordinates.length > 0) {
+                const randomTown = _.sample(townCoordinates);
+                retirementGoal.townName = townNames[`${randomTown.x},${randomTown.y}`];
+                retirementGoal.x = randomTown.x;
+                retirementGoal.y = randomTown.y;
+                retirementTownNameDisplay.textContent = retirementGoal.townName;
+                retirementGoldAmountDisplay.textContent = retirementGoal.goldAmount;
+            } else {
+                console.error("No towns available to set a retirement goal.");
+                // Hide the goal display if no towns exist
+                document.getElementById('retirementGoalDisplay').style.display = 'none';
+            }
+        }
+
+        /**
+         * Displays the victory screen.
+         */
+        function showVictoryScreen() {
+            victoryTownName.textContent = retirementGoal.townName;
+            victoryScreen.style.display = 'flex';
+            disableGameInput();
         }
 
         /**
@@ -629,8 +720,8 @@
         function updateHealSliderDisplay() {
             const healthToHeal = parseInt(healthHealSlider.value);
             const goldCost = healthToHeal / healthPerGoldUnitHeal;
-            sliderHealthAmountDisplay.textContent = `${healthToHeal} Health`;
-            sliderHealCostDisplay.textContent = `${goldCost} Gold`;
+
+            healHealthButton.textContent = `Heal ${healthToHeal} Health for ${goldCost} Gold`;
 
             // Disable heal button if cost is too high or healthToHeal is 0 or health is full
             if (healthToHeal === 0 || goldCount < goldCost || healthCount >= maxHealthCapacity) {
@@ -678,9 +769,8 @@
         function updateSliderDisplay() {
             const foodToBuy = parseInt(foodBuySlider.value);
             const goldCost = foodToBuy / foodPerGoldUnit;
-            sliderFoodAmountDisplay.textContent = `${foodToBuy} Food`;
-            sliderGoldCostDisplay.textContent = `${goldCost} Gold`;
 
+            buyFoodButton.textContent = `Buy ${foodToBuy} Food for ${goldCost} Gold`;
             // Disable buy button if cost is too high or foodToBuy is 0
             if (foodToBuy === 0 || goldCount < goldCost) {
                 buyFoodButton.disabled = true;
@@ -698,6 +788,12 @@
          * @param {string} name - The name of the town to display.
          */
         function showTownScreen(name) {
+            // Check for victory condition first
+            if (name === retirementGoal.townName && goldCount >= retirementGoal.goldAmount) {
+                showVictoryScreen();
+                return; // Stop processing and show victory screen instead
+            }
+
             townNameDisplay.textContent = name;
             
             // Calculate max food player can buy based on current food and max capacity
@@ -722,16 +818,8 @@
             healthHealSlider.value = 0; // Start slider at 0
             updateHealSliderDisplay(); // Update health slider display initially
 
-            // Only generate and show delivery quests if no quest is active
-            if (!currentQuest) {
-                generateDeliveryQuests();
-                deliveryOptionButtons.forEach(btn => btn.style.display = 'block');
-                // Removed noDeliveryButton.style.display = 'block';
-            } else {
-                deliveryOptionButtons.forEach(btn => btn.style.display = 'none');
-                // Removed noDeliveryButton.style.display = 'none';
-            }
-
+            // Generate and display available delivery quests
+            generateDeliveryQuests();
             townScreen.style.display = 'flex';
             // Disable game input
             disableGameInput();
@@ -809,10 +897,11 @@
          * Restarts the game, resetting food/gold, regenerating the map, and re-enabling input.
          */
         function restartGame() {
+            victoryScreen.style.display = 'none'; // Hide victory screen
             gameOverScreen.style.display = 'none'; //hide game over screen
             townScreen.style.display = 'none'; // Hide town screen if open
             monsterEncounterScreen.style.display = 'none'; // Hide monster screen if open
-            currentQuest = null; // Clear any active quest
+            activeQuests = []; // Clear any active quests
             updateActiveQuestDisplay(); // Hide quest display
             turnsInHazardousTerrain = 0; // Reset monster encounter counter
             enableGameInput(); //re-enable input
@@ -826,9 +915,11 @@
             updateFoodCounter();
             updateGoldCounter();
             generateMap();
+            setupRetirementGoal(); // Set a new retirement goal
             initializePlayer();
             resizeCanvas(); // Ensure canvas is correctly sized and map drawn
             drawMap();
+            showTownScreen(retirementGoal.townName); // Show the starting town screen
         }
 
         /**
@@ -884,13 +975,30 @@
             let message = "";
 
             // Check for quest completion first
-            if (currentQuest && newX === currentQuest.targetX && newY === currentQuest.targetY) {
-                goldCount += currentQuest.reward;
-                showMessage(`Delivery complete! You earned ${currentQuest.reward} gold for delivering to ${currentQuest.targetTownName}!`, 3000);
-                currentQuest = null; // Clear the quest
+            const completedQuests = activeQuests.filter(quest => newX === quest.targetX && newY === quest.targetY);
+
+            if (completedQuests.length > 0) {
+                let totalReward = 0;
+                const completedTownName = completedQuests[0].targetTownName; // All quests will be for the same town
+
+                completedQuests.forEach(quest => {
+                    totalReward += quest.reward;
+                });
+
+                goldCount += totalReward;
+                const completionMessage = completedQuests.length > 1
+                    ? `${completedQuests.length} deliveries to ${completedTownName} complete! You earned a total of ${totalReward} gold.`
+                    : `Delivery to ${completedTownName} complete! You earned ${totalReward} gold.`;
+                
+                showMessage(completionMessage, 4000);
+
+                // Remove completed quests from the main list
+                activeQuests = activeQuests.filter(quest => !completedQuests.includes(quest));
+
                 updateGoldCounter();
-                updateActiveQuestDisplay(); // Hide active quest display
-                // Player still moves onto the town, so proceed with town logic
+                updateActiveQuestDisplay();
+
+                // Move player and show town screen since a delivery is always to a town
                 playerX = newX;
                 playerY = newY;
                 showTownScreen(townNames[`${newX},${newY}`]); // Show town screen
@@ -940,6 +1048,7 @@
             updateFoodCounter();
             updateGoldCounter();
             updateDayCounter();
+            updateQuestTimers(movementCost); // Update quest timers based on days passed
 
             // New: Health penalty if food is 0
             if (foodCount <= 0) {
@@ -1131,6 +1240,7 @@
 
         // Event Listeners
         restartButton.addEventListener('click', restartGame);
+        restartButtonVictory.addEventListener('click', restartGame);
         buyFoodButton.addEventListener('click', buyFood);
         closeTownButton.addEventListener('click', closeTownScreen);
         foodBuySlider.addEventListener('input', updateSliderDisplay); // Listen for food slider changes
@@ -1160,14 +1270,16 @@
         // Initial setup when the window loads
         window.addEventListener('load', () => {
 
-            generateMap(); // Generate map initially
-            initializePlayer(); // Place player
+            generateMap();
+            setupRetirementGoal(); // Set the initial retirement goal so player can start there
+            initializePlayer();
             resizeCanvas(); // Set canvas size and draw map
             updateDayCounter(); // Update day display
             updateHealthCounter(); // Update health display
             updateFoodCounter();
             updateGoldCounter();
             updateActiveQuestDisplay(); // Initialize quest display
+            showTownScreen(retirementGoal.townName); // Show the starting town screen
         });
 
         // Handle window resize events

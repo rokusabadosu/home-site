@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FRB67X5HNC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-FRB67X5HNC');
+    </script>
+    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Courier</title>
@@ -31,6 +41,10 @@
             <span id="goldValue">0</span>
         </div>
     </div>
+    <div id="retirementGoalDisplay">
+        <img src="images/goal.png" alt="Retirement Goal:" class="h-5 w-5 mr-2" title="Retirement Goal">
+        <span>Retire in <span id="retirementTownName"></span> with <span id="retirementGoldAmount">1000</span> gold.</span>
+    </div>
     <div id="activeQuestDisplay"></div>
 
     <div id="gameOverScreen">
@@ -39,24 +53,25 @@
         <button id="restartButton">Restart</button>
     </div>
 
+    <div id="victoryScreen">
+        <h2>Congratulations!</h2>
+        <p>You have successfully retired in <span id="victoryTownName"></span>!</p>
+        <p>You can now live a life of luxury.</p>
+        <button id="restartButtonVictory">Restart</button>
+    </div>
+
     <div id="townScreen">
         <h2 id="townNameDisplay" class="text-4xl mb-4"></h2>
         <p class="mb-4">Welcome to the town!</p>
         <div class="flex flex-col md:flex-row items-center md:items-start justify-center space-y-8 md:space-y-0 md:space-x-8 mb-4 w-full">
             <div class="flex flex-col items-center">
-                <label for="foodBuySlider" class="mb-2">Buy Food:</label>
-                <input type="range" id="foodBuySlider" min="0" max="0" value="0" step="10" class="w-64 accent-green-500">
-                <p id="sliderFoodAmount" class="mt-2">0 Food</p>
-                <p id="sliderGoldCost" class="mt-1">0 Gold</p>
-                <button id="buyFoodButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transition duration-300 ease-in-out transform hover:scale-105 mt-4">Buy Food</button>
+                <input type="range" id="foodBuySlider" min="0" max="0" value="0" step="10" class="w-64 accent-green-500 mb-4">
+                <button id="buyFoodButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transition duration-300 ease-in-out transform hover:scale-105">Buy Food</button>
             </div>
 
             <div class="flex flex-col items-center">
-                <label for="healthHealSlider" class="mb-2">Heal Health:</label>
-                <input type="range" id="healthHealSlider" min="0" max="0" value="0" step="2" class="w-64 accent-red-500">
-                <p id="sliderHealthAmount" class="mt-2">0 Health</p>
-                <p id="sliderHealCost" class="mt-1">0 Gold</p>
-                <button id="healHealthButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transition duration-300 ease-in-out transform hover:scale-105 mt-4">Heal Health</button>
+                <input type="range" id="healthHealSlider" min="0" max="0" value="0" step="2" class="w-64 accent-red-500 mb-4">
+                <button id="healHealthButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-md shadow-lg transition duration-300 ease-in-out transform hover:scale-105">Heal Health</button>
             </div>
         </div>
 
@@ -83,5 +98,12 @@
     <div id="messageDisplay" class="hide-message"></div>
 
     <script src="js/script.js"></script>
+    <script>
+        window.Userback = window.Userback || {};
+        Userback.access_token = "A-GEvGLtYN3F2l9XNckTyWccHGL";
+        (function(d) {
+            var s = d.createElement('script');s.async = true;s.src = 'https://static.userback.io/widget/v1.js';(d.head || d.body).appendChild(s);
+        })(document);
+    </script>
 </body>
 </html>

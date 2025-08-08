@@ -34,17 +34,52 @@
         }
         #activeQuestDisplay {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 95px; /* Positioned below the retirement goal */
+            left: 10px;
             color: white;
-            font-size: 18px;
-            z-index: 10;
+            font-size: 14px;
+            z-index: 12; /* Increased to be visible above modals */
             padding: 5px 10px;
             background-color: rgba(0, 0, 0, 0.7);
             border-radius: 5px;
             display: none; /* Hidden by default */
         }
-        #gameOverScreen, #townScreen, #monsterEncounterScreen {
+        #activeQuestDisplay ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        #activeQuestDisplay .quest-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        #activeQuestDisplay .quest-item:last-child {
+            margin-bottom: 0;
+        }
+        #retirementGoalDisplay {
+            position: absolute;
+            top: 55px; /* Positioned below the stats */
+            left: 10px;
+            display: flex;
+            align-items: center;
+            padding: 5px 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 12;
+        }
+        #retirementGoalDisplay #retirementTownName {
+            font-weight: 600;
+            color: #FBBF24; /* A gold-like color */
+            margin: 0 4px;
+        }
+
+        #gameOverScreen,
+        #townScreen,
+        #monsterEncounterScreen,
+        #victoryScreen {
             position: absolute;
             top: 0;
             left: 0;
@@ -59,6 +94,10 @@
             color: white;
             font-size: 24px;
         }
+        #victoryScreen h2 { color: #2dd4bf; } /* A celebratory teal color */
+        #victoryScreen button { background-color: #0d9488; } /* Teal button */
+        #victoryScreen button:hover { background-color: #0f766e; } /* Darker teal */
+
         #gameOverScreen h2, #townScreen h2, #monsterEncounterScreen h2 {
             font-size: 36px;
             margin-bottom: 20px;
@@ -117,9 +156,8 @@
 
         #messageDisplay {
             position: absolute;
-            top: 50%; /* Changed from bottom */
-            left: 50%; /* Center horizontally */
-            transform: translate(-50%, -50%); /* Adjust for perfect centering */
+            bottom: 10px;
+            left: 10px;
             background-color: rgba(0, 0, 0, 0.7);
             color: white;
             padding: 5px 10px;
@@ -128,15 +166,13 @@
             z-index: 12;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
-            max-width: 80%; /* Limit width for long messages */
-            text-align: center;
-            white-space: nowrap; /* Prevent text wrapping */
+            max-width: 350px; /* Limit width for long messages */
+            text-align: left;
+            white-space: normal; /* Allow text wrapping */
         }
         #messageDisplay.show-message {
             opacity: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: block; /* Changed from flex for simpler layout */
         }
         .hide-message {
             opacity: 0;

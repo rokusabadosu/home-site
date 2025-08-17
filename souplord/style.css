@@ -1,0 +1,272 @@
+body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+}
+
+#stats-container {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.stat-box {
+    font-size: 1.5em;
+    font-weight: bold;
+    background-color: #fff;
+    padding: 2px 12px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.stat-number {
+    color: #000;
+}
+
+#timer-display {
+    color: #f97316; /* Orange */
+}
+
+#score-display {
+    color: #22c55e;
+}
+
+#served-display {
+    color: #3b82f6;
+}
+
+#game-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+#tables-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 10px;
+    background-color: #d1d5db;
+    border-radius: 10px;
+    width: 420px; /* (120px * 3) + (20px * 3) */
+}
+
+.table-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.table-recipe {
+    font-size: 1.2em;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.table-dropzone {
+    width: 100px;
+    height: 60px;
+    border: 2px dashed transparent;
+    border-radius: 8px;
+    transition: background-color 0.2s, border-color 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3.5em;
+}
+
+.table-dropzone.drag-over {
+    background-color: #b3b3b3;
+    border-color: #525252;
+}
+
+.table-dropzone.happy { background-color: #86efac; border-color: #16a34a; }
+.table-dropzone.sad { background-color: #fca5a5; border-color: #dc2626; }
+
+#pots-container {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+}
+
+.pot-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.pot {
+    width: 120px;
+    height: 120px;
+    background-color: #a16207;
+    border: 3px dashed #663d02;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 4em;
+    transition: background-color 0.2s, transform 0.2s;
+    cursor: grab;
+}
+
+.pot.drag-over {
+    background-color: #c27803;
+    transform: scale(1.1);
+    border-style: solid;
+}
+
+.pot.dragging-pot {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+
+.pot-ingredients {
+    list-style: none;
+    padding: 5px;
+    margin: 0;
+    height: 30px; /* Match table-recipe height */
+    width: 120px;
+    background-color: #e5e7eb;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap; /* In case of many ingredients */
+}
+
+.pot-ingredients li {
+    background-color: #f9fafb;
+    padding: 4px;
+    border-radius: 4px;
+    font-size: 1.2em; /* Match table-recipe font-size */
+    text-align: center; /* Center the emoji */
+    line-height: 1;
+}
+
+#ingredients-container {
+    display: grid;
+    grid-template-columns: repeat(4, 100px);
+    gap: 10px;
+    padding: 10px;
+    background-color: #d1d5db;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tile {
+    width: 100px;
+    height: 100px;
+    background-color: #4a90e2;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 3.5em; /* Much larger emoji */
+    cursor: grab;
+    user-select: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.tile.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    transform: scale(1.05);
+}
+
+#trash-can {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 100px;
+    height: 100px;
+    background-color: #737373;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 4em;
+    color: white;
+    border: 3px dashed #525252;
+    transition: background-color 0.2s, transform 0.2s, border-style 0.2s;
+}
+
+#trash-can.drag-over {
+    background-color: #ef4444; /* Red */
+    transform: scale(1.1);
+    border-style: solid;
+}
+
+/* --- Modal Styles --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Make sure it's on top */
+}
+
+.modal-content {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+    width: 300px;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    color: #f97316; /* Orange */
+}
+
+.modal-content p {
+    font-size: 1.2em;
+    margin: 15px 0;
+}
+
+.hidden {
+    display: none;
+}
+
+#play-again-btn {
+    background-color: #22c55e;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    font-size: 1.1em;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#play-again-btn:hover {
+    background-color: #16a34a;
+}

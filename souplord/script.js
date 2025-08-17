@@ -1,6 +1,6 @@
 // --- DOM Elements ---
 const ingredientsContainer = document.getElementById('ingredients-container');
-const scoreDisplay = document.getElementById('score-display');
+const scoreNumberSpan = document.querySelector('#score-display .stat-number');
 const servedDisplay = document.getElementById('served-display');
 const timerDisplay = document.getElementById('timer-display');
 const tablesContainer = document.getElementById('tables-container');
@@ -47,9 +47,32 @@ function getEmoji(ingredientText) {
     return ingredientText.split(' ')[0];
 }
 
-/** Updates the score display with the current money total. */
-function updateScoreDisplay() {
-    scoreDisplay.innerHTML = `💵 <span class="stat-number">${money}</span>`;
+/**
+ * Helper function to apply a temporary animation class to an element.
+ * @param {HTMLElement} element The element to animate.
+ * @param {string} className The animation class to add.
+ */
+function triggerAnimation(element, className) {
+    // Remove both possible classes to reset state
+    element.classList.remove('score-plus', 'score-minus');
+
+    // Force reflow to restart animation if the same class is added again
+    void element.offsetWidth;
+
+    element.classList.add(className);
+
+    // Clean up the class after the animation finishes
+    element.addEventListener('animationend', () => {
+        element.classList.remove(className);
+    }, { once: true });
+}
+
+/** Changes the player's money, updates the display, and triggers an animation. */
+function changeMoney(amount) {
+    if (amount === 0) return;
+    money += amount;
+    scoreNumberSpan.textContent = money;
+    triggerAnimation(scoreNumberSpan, amount > 0 ? 'score-plus' : 'score-minus');
 }
 
 /** Updates the tables served display. */
@@ -233,8 +256,7 @@ function handleTableDrop(e) {
         // Calculate and add earnings
         const numIngredients = recipeIngredients.length;
         const earnings = EARNINGS_MAP[numIngredients] || 0;
-        money += earnings;
-        updateScoreDisplay();
+        changeMoney(earnings);
 
         // A table was served successfully.
         tablesServed++;
@@ -242,8 +264,7 @@ function handleTableDrop(e) {
     } else {
         this.innerText = '😞';
         this.classList.add('sad');
-        money -= WRONG_ORDER_PENALTY;
-        updateScoreDisplay();
+        changeMoney(-WRONG_ORDER_PENALTY);
     }
 
     // Clear the pot that was used for any delivery attempt
@@ -283,8 +304,7 @@ function handleTrashDrop(e) {
         if (potIngredients.length > 0) {
             const potId = e.dataTransfer.getData('text/pot-id');
             const cost = potIngredients.length * TRASH_COST_PER_INGREDIENT_IN_POT;
-            money -= cost;
-            updateScoreDisplay();
+            changeMoney(-cost);
 
             const potElem = document.querySelector(`.pot[data-pot-id='${potId}']`);
             if (potElem) {
@@ -294,8 +314,7 @@ function handleTrashDrop(e) {
     } else if (draggedTileId) { // It's an ingredient tile
         const draggedTile = document.getElementById(draggedTileId);
         if (draggedTile) {
-            money -= TRASH_COST_PER_TILE;
-            updateScoreDisplay();
+            changeMoney(-TRASH_COST_PER_TILE);
 
             // Replace the trashed tile with a new one in the same position
             const parent = draggedTile.parentElement;
@@ -387,8 +406,7 @@ playAgainBtn.addEventListener('click', () => {
 });
 
 // --- Initialization ---
-updateScoreDisplay(); // Set initial score to $0
-updateServedDisplay();
+updateServedDisplay(); // Set initial served to 0
 updateTimerDisplay(); // Show initial time before the first interval tick
 initializeTables();
 initializeBoard();

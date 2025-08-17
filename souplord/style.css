@@ -30,6 +30,29 @@ body {
 
 .stat-number {
     color: #000;
+    display: inline-block; /* Ensures transform works correctly */
+}
+
+.score-plus {
+    animation: score-plus-anim 0.4s ease-out;
+}
+
+@keyframes score-plus-anim {
+    50% {
+        transform: scale(1.3);
+        color: #22c55e; /* Bright green */
+    }
+}
+
+.score-minus {
+    animation: score-minus-anim 0.4s ease-out;
+}
+
+@keyframes score-minus-anim {
+    50% {
+        transform: scale(1.2);
+        color: #ef4444; /* Bright red */
+    }
 }
 
 #timer-display {
@@ -103,6 +126,7 @@ body {
     display: flex;
     gap: 20px;
     justify-content: center;
+    align-items: flex-start;
 }
 
 .pot-wrapper {
@@ -196,19 +220,16 @@ body {
 }
 
 #trash-can {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     background-color: #737373;
-    border-radius: 10px;
+    border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 4em;
     color: white;
-    border: 3px dashed #525252;
+    border: 3px dashed #404040;
     transition: background-color 0.2s, transform 0.2s, border-style 0.2s;
 }
 

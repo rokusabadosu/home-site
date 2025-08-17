@@ -1,6 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-FRB67X5HNC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+
+        gtag('config', 'G-FRB67X5HNC');
+    </script>
+
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3707855373985482"
+     crossorigin="anonymous"></script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Soup Lord</title>
@@ -25,23 +38,27 @@
                 <div class="pot" data-pot-id="2" draggable="true">🍲</div>
                 <ul class="pot-ingredients"></ul>
             </div>
-            <div class="pot-wrapper">
-                <div class="pot" data-pot-id="3" draggable="true">🍲</div>
-                <ul class="pot-ingredients"></ul>
-            </div>
+            <div id="trash-can">🗑️</div>
         </div>
         <div id="ingredients-container"></div>
     </div>
-    <div id="trash-can">🗑️</div>
 
     <div id="game-over-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <h2>Game Over!</h2>
-            <p>Final Money: <span id="final-money">0</span></p>
-            <p>Tables Served: <span id="final-served">0</span></p>
+            <h2>Time's Up Soup Lord!</h2>
+            <p>Your Profit: <span id="final-money">0</span></p>
+            <p>Happy Customers: <span id="final-served">0</span></p>
             <button id="play-again-btn">Play Again</button>
         </div>
     </div>
     <script src="script.js"></script>
+
+    <script>
+        window.Userback = window.Userback || {};
+        Userback.access_token = "A-GEvGLtYN3F2l9XNckTyWccHGL";
+        (function(d) {
+            var s = d.createElement('script');s.async = true;s.src = 'https://static.userback.io/widget/v1.js';(d.head || d.body).appendChild(s);
+        })(document);
+    </script>
 </body>
 </html>

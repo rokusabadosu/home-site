@@ -1,5 +1,6 @@
 // --- DOM Elements ---
 const ingredientsContainer = document.getElementById('ingredients-container');
+const gameArea = document.getElementById('game-area');
 const scoreNumberSpan = document.querySelector('#score-display .stat-number');
 const servedDisplay = document.getElementById('served-display');
 const timerDisplay = document.getElementById('timer-display');
@@ -10,13 +11,14 @@ const gameOverModal = document.getElementById('game-over-modal');
 const finalMoneyDisplay = document.getElementById('final-money');
 const finalServedDisplay = document.getElementById('final-served');
 const playAgainBtn = document.getElementById('play-again-btn');
+const startGameModal = document.getElementById('start-game-modal');
+const startGameBtn = document.getElementById('start-game-btn');
 
 // --- Game State & Data ---
 const MASTER_INGREDIENTS = [
     "🥕 Carrots", "🧅 Onions", "🥬 Celery", "🥔 Potatoes", "🧄 Garlic",
-    "🍅 Tomatoes", "🍄 Mushrooms", 
-    "🌿 Parsley", "🧂 Pepper", "🌶️ Chili", "🌽 Corn", "🥦 Broccoli",
-    "🍗 Chicken", "🥩 Beef"
+    "🍅 Tomatoes", "🍄 Mushrooms", "🌿 Parsley", "🌶️ Chili", "🌽 Corn",
+    "🍗 Chicken", "🥩 Beef", "🎃 Pumpkin"
 ];
 const TILE_COUNT = 12;
 const TABLE_COUNT = 6;
@@ -356,8 +358,7 @@ function endGame() {
     timerDisplay.innerHTML = `⏱️ <span class="stat-number">0:00</span>`; // Ensure it shows 0:00
 
     // Disable all game interactions
-    document.getElementById('game-area').style.pointerEvents = 'none';
-    trashCan.style.pointerEvents = 'none';
+    gameArea.style.pointerEvents = 'none';
 
     // Update and show the game over modal
     finalMoneyDisplay.innerText = `$${money}`;
@@ -405,9 +406,25 @@ playAgainBtn.addEventListener('click', () => {
     location.reload();
 });
 
+// Add listener for the "Start Game" button in the start modal
+startGameBtn.addEventListener('click', () => {
+    // Hide the modal
+    startGameModal.classList.add('hidden');
+
+    // Enable game interactions
+    gameArea.style.pointerEvents = 'auto';
+
+    // Start the game
+    startGameTimer();
+});
+
 // --- Initialization ---
+
+// Disable game area until the player clicks "Start"
+gameArea.style.pointerEvents = 'none';
+
 updateServedDisplay(); // Set initial served to 0
 updateTimerDisplay(); // Show initial time before the first interval tick
 initializeTables();
 initializeBoard();
-startGameTimer();
+// Game timer is now started by the start-game-btn event listener

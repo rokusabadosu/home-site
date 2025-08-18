@@ -40,6 +40,21 @@
         <div id="ingredients-container"></div>
     </div>
 
+    <div id="start-game-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>You are the Soup Lord!</h2>
+            <div class="instructions">
+                <ul>
+                    <li>Drag ingredients 🥕 to a pot 🍲.</li>
+                    <li>Drag the full pot 🍲 to a customer's table 🍽️ to match their order.</li>
+                    <li>Serve as many customers as you can before time runs out!</li>
+                    <li>Drag unwanted items to the trash 🗑️, but it will cost you money!</li>
+                </ul>
+            </div>
+            <button id="start-game-btn">Get Cooking!</button>
+        </div>
+    </div>
+
     <div id="game-over-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <h2>Time's Up Soup Lord!</h2>
@@ -48,6 +63,8 @@
             <button id="play-again-btn">Play Again</button>
         </div>
     </div>
+    <!-- Polyfill to enable HTML5 Drag & Drop on touch devices -->
+    <script src="https://cdn.jsdelivr.net/npm/drag-drop-touch/DragDropTouch.js"></script>
     <script src="script.js"></script>
 
     <script>

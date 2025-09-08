@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+body {
+    margin: 0;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #000;
+    font-family: 'Orbitron', sans-serif; /* Use a futuristic font */
+}
+
+#gameCanvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: none;
+}
+
+/* Common styles for HUD text */
+#gameStats > div,
+#bestTimesContainer > div,
+#bestTimesContainer h3 {
+    color: #ffffff;
+    font-size: 1.5vw;
+    z-index: 10;
+    white-space: nowrap;
+    font-weight: bold;
+    text-shadow: 0 0 5px #00FFFF;
+}
+
+/* Common styles for bordered HUD boxes */
+#gameStats,
+#bestTimesContainer {
+    padding: 0.5vw;
+    background-color: rgba(0, 25, 25, 0.7); /* Dark cyan background */
+    border-radius: 0.5vw;
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.5), inset 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+/* Main container for all HUD elements */
+#hudContainer {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Space between the stats box and the best times box */
+    z-index: 10;
+}
+
+/* Container for the main game counters */
+#gameStats {
+    display: flex;
+    flex-direction: column; /* Stack children vertically */
+    gap: 5px; /* Space between timer and the row below */
+}
+
+/* Row for stars and fuel counters */
+.stat-row {
+    display: flex;
+    justify-content: flex-start; /* Align items to the start */
+    gap: 20px; /* Add fixed space between fuel and stars */
+}
+
+/* Container for the best times display */
+#bestTimesContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+#bestTimesContainer h3 {
+    margin: 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+    text-align: center;
+}
+
+#gameOverScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 11;
+    color: #ffffff;
+    font-size: 3vw;
+    text-align: center;
+}
+
+#gameOverScreen button {
+    margin-top: 2vw;
+    padding: 1vw 2vw;
+    font-size: 1.5vw;
+    background-color: #00FFFF;
+    color: #000;
+    border: none;
+    border-radius: 0.5vw;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#gameOverScreen button:hover {
+    background-color: #00b3b3;
+}
+
+#startScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 12;
+    color: #ffffff;
+    font-size: 3vw;
+    text-align: center; 
+}
+
+#startScreen button {
+    margin-top: 2vw;
+    padding: 1vw 2vw;
+    font-size: 1.5vw;
+    background-color: #00FFFF;
+    color: #000;
+    border: none;
+    border-radius: 0.5vw;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-family: 'Orbitron', sans-serif;
+    margin: 10px;
+}
+
+#startScreen button:hover {
+    background-color: #00b3b3;
+}
+
+#startScreen h1 {
+    font-size: 4vw;
+    margin-bottom: 2vw;
+}
+
+#startScreen h2 {
+    font-size: 2.5vw;
+    margin: 2vw 0 1vw; /* top | horizontal | bottom */
+    font-weight: normal;
+    text-shadow: 0 0 5px #00FFFF;
+}
+
+#startScreen div {
+    display: flex;
+    flex-direction: row;
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-FRB67X5HNC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-FRB67X5HNC');
+</script>
+
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3707855373985482"
+     crossorigin="anonymous"></script>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Journey of the Oumuamua</title>
+    <link rel="stylesheet" href="oumuamua.css">
+</head>
+<body>
+    <div id="hudContainer">
+        <div id="gameStats">
+            <div id="timerDisplay">⏳ <span>0</span> Years</div>
+            <div class="stat-row">
+                <div id="fuelDisplay">⛽ <span>1000</span></div>
+                <div id="starCounter">⭐ <span>0</span></div>
+            </div>
+        </div>
+        <div id="bestTimesContainer">
+            <h3>Best Times</h3>
+            <div id="bestTimeEasy">Easy: <span>-</span></div>
+            <div id="bestTimeMedium">Medium: <span>-</span></div>
+            <div id="bestTimeHard">Hard: <span>-</span></div>
+        </div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="startScreen">
+        <h1 id="gameOverTitle">You are the Captain of the Oumuamua,<br>our first interstellar spacecraft.</h1>
+        <p id="gameOverText">You must visit each star in our local system<br>without running out of fuel.</p>
+        <p id="gameOverTime"></p>
+        <h2>New Game</h2>
+        <div>
+            <button id="easyButton">Easy</button>
+            <button id="mediumButton">Medium</button>
+            <button id="hardButton">Hard</button>
+        </div>
+    </div>
+    <script src="oumuamua.js"></script>
+    <script>
+    // Userback widget integration (for feedback)
+    window.Userback = window.Userback || {};
+    Userback.access_token = "A-GEvGLtYN3F2l9XNckTyWccHGL";
+    (function(d) {
+        var s = d.createElement('script');s.async = true;s.src = 'https://static.userback.io/widget/v1.js';(d.head || d.body).appendChild(s);
+    })(document);
+    </script>
+
+</body>
+</html>

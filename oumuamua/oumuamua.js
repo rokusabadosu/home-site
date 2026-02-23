@@ -41,7 +41,7 @@ const GAME_SETTINGS = {
     NUM_STARS: 12,
     STAR_RADIUS: 6,
     NUM_BACKGROUND_STARS: 200,
-    GRAVITY_CONSTANT: 0.1,
+    GRAVITY_CONSTANT: 0.05,
     GRAVITY_RADIUS: 50,
     EDGE_MARGIN: 50,
     TIME_MULTIPLIER: 100, // Each second is 100 years
@@ -114,6 +114,19 @@ function generateStars() {
             initialColor: randomColor,
         });
     }
+}
+
+function drawGravityZones() {
+    stars.forEach((star) => {
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, GAME_SETTINGS.GRAVITY_RADIUS, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(200, 200, 200, 0.2)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.closePath();
+    });
 }
 
 function drawStars() {
@@ -245,7 +258,8 @@ function updateSpaceship() {
     stars.forEach(star => {
         const { dx, dy, distance } = getDistance(spaceship, star);
         if (distance > 0 && distance < GAME_SETTINGS.GRAVITY_RADIUS) {
-            const forceMagnitude = GAME_SETTINGS.GRAVITY_CONSTANT / distance;
+            // Linear falloff: full force at center, zero at edge
+            const forceMagnitude = ((GAME_SETTINGS.GRAVITY_RADIUS - distance) / GAME_SETTINGS.GRAVITY_RADIUS) * GAME_SETTINGS.GRAVITY_CONSTANT;
             // Add the force vector components for this star to the net force
             netForceX += (dx / distance) * forceMagnitude;
             netForceY += (dy / distance) * forceMagnitude;
@@ -335,8 +349,8 @@ function endGame(reason) {
             gameOverText.textContent = "You ran out of fuel!";
             break;
         case "stars":
-            gameOverTitle.textContent = "Well done Captain!";
-            gameOverText.textContent = "You have fulfilled your mission by mapping out the local star system!";
+            gameOverTitle.textContent = "Glorious Victory!";
+            gameOverText.textContent = "You have mapped out the local stellar neighborhood and brought honour to your civilization!";
             if (bestTimes[currentDifficulty] === null || elapsedTime < bestTimes[currentDifficulty]) {
                 bestTimes[currentDifficulty] = elapsedTime;
                 localStorage.setItem('oumuamuaBestTimes', JSON.stringify(bestTimes));
@@ -391,6 +405,7 @@ function gameLoop() {
         frameCount++;
         updateSpaceship();
         drawBackground();
+        drawGravityZones();
         drawStars();
         drawSpaceship();
         requestAnimationFrame(gameLoop);

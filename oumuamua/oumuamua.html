@@ -8,13 +8,12 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-FRB67X5HNC');
 </script>
 
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3707855373985482"
      crossorigin="anonymous"></script>
-    
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Journey of the Oumuamua</title>
@@ -23,10 +22,10 @@
 <body>
     <div id="hudContainer">
         <div id="gameStats">
-            <div id="timerDisplay">⏳ <span>0</span> Years</div>
+            <div id="timerDisplay">&#x231B; <span>0</span> Years</div>
             <div class="stat-row">
-                <div id="fuelDisplay">⛽ <span>1000</span></div>
-                <div id="starCounter">⭐ <span>0</span></div>
+                <div id="fuelDisplay">&#x26FD; <span>1000</span><div id="fuelBar"><div id="fuelFill"></div></div></div>
+                <div id="starCounter">&#x2B50; <span>0</span></div>
             </div>
         </div>
         <div id="bestTimesContainer">
@@ -35,12 +34,31 @@
             <div id="bestTimeMedium">Medium: <span>-</span></div>
             <div id="bestTimeHard">Hard: <span>-</span></div>
         </div>
+        <div id="controlsHint">
+            WASD / &#x2191;&#x2190;&#x2193;&#x2192; &mdash; Navigate<br>
+            P / Esc &mdash; Pause
+        </div>
     </div>
+
     <canvas id="gameCanvas"></canvas>
+    <div id="vignette"></div>
+
+    <!-- Pause overlay -->
+    <div id="pauseOverlay">
+        <h2>PAUSED</h2>
+        <p>Press P or Esc to resume</p>
+    </div>
+
+    <!-- Start / game-over screen -->
     <div id="startScreen">
-        <h1 id="gameOverTitle">Welcome Captain! <br>The Oumuamua is yours to command.</h1>
+        <h1 id="gameOverTitle">Welcome Captain!<br>The Oumuamua is yours to command.</h1>
         <p id="gameOverText">Your mission: Visit each star in our local system<br>without running out of fuel.</p>
         <p id="gameOverTime"></p>
+        <div id="startControls">
+            <span>WASD / Arrow Keys &mdash; Rotate &amp; Thrust</span>
+            <span>P / Esc &mdash; Pause</span>
+            <span>Swipe on mobile</span>
+        </div>
         <h2>New Game</h2>
         <div>
             <button id="easyButton">Easy</button>
@@ -48,15 +66,14 @@
             <button id="hardButton">Hard</button>
         </div>
     </div>
+
     <script src="oumuamua.js"></script>
     <script>
-    // Userback widget integration (for feedback)
     window.Userback = window.Userback || {};
     Userback.access_token = "A-GEvGLtYN3F2l9XNckTyWccHGL";
     (function(d) {
         var s = d.createElement('script');s.async = true;s.src = 'https://static.userback.io/widget/v1.js';(d.head || d.body).appendChild(s);
     })(document);
     </script>
-
 </body>
 </html>

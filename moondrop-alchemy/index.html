@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moondrop Alchemy</title>
+    <!-- Load D3.js from CDN -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="start-screen">
+        <div class="content">
+            <img src="images/big-banner.png" alt="Tangled Web" class="banner-img">
+            <p>You've just opened your Alchemy shop in your new home town, <br>selling potions to the locals!  Life is good.</p>
+            
+            <div class="input-group">
+                <input type="text" id="player-name" placeholder="Your Name">
+            </div>
+            <div class="input-group">
+                <div class="avatar-selection">
+                    <label><input type="radio" name="player-avatar" value="images/woman1.png" checked><img src="images/woman1.png" alt="Woman 1"></label>
+                    <label><input type="radio" name="player-avatar" value="images/woman2.png"><img src="images/woman2.png" alt="Woman 2"></label>
+                    <label><input type="radio" name="player-avatar" value="images/woman3.png"><img src="images/woman3.png" alt="Woman 3"></label>
+                    <label><input type="radio" name="player-avatar" value="images/woman4.png"><img src="images/woman4.png" alt="Woman 4"></label>
+                    <label><input type="radio" name="player-avatar" value="images/woman5.png"><img src="images/woman5.png" alt="Woman 5"></label>
+                </div>
+                <div class="avatar-selection">
+                    <label><input type="radio" name="player-avatar" value="images/man1.png"><img src="images/man1.png" alt="Man 1"></label>
+                    <label><input type="radio" name="player-avatar" value="images/man2.png"><img src="images/man2.png" alt="Man 2"></label>
+                    <label><input type="radio" name="player-avatar" value="images/man3.png"><img src="images/man3.png" alt="Man 3"></label>
+                    <label><input type="radio" name="player-avatar" value="images/man4.png"><img src="images/man4.png" alt="Man 4"></label>
+                    <label><input type="radio" name="player-avatar" value="images/man5.png"><img src="images/man5.png" alt="Man 5"></label>
+                </div>
+            </div>
+            <div class="input-group">
+                <input type="text" id="pet-name" placeholder="Your Pet's Name">
+            </div>
+            <div class="input-group">
+                <div class="avatar-selection">
+                    <label><input type="radio" name="pet-avatar" value="images/pet1.png" checked><img src="images/pet1.png" alt="Pet 1"></label>
+                    <label><input type="radio" name="pet-avatar" value="images/pet2.png"><img src="images/pet2.png" alt="Pet 2"></label>
+                    <label><input type="radio" name="pet-avatar" value="images/pet3.png"><img src="images/pet3.png" alt="Pet 3"></label>
+                    <label><input type="radio" name="pet-avatar" value="images/pet4.png"><img src="images/pet4.png" alt="Pet 4"></label>
+                    <label><input type="radio" name="pet-avatar" value="images/pet5.png"><img src="images/pet5.png" alt="Pet 5"></label>
+                </div>
+            </div>
+            <button id="start-btn">Open the Store!</button>
+        </div>
+    </div>
+
+    <div id="graph-container"></div>
+    <div id="game-ui"></div>
+    
+    <button id="next-btn">Next Customer!</button>
+
+    <script src="script.js"></script>
+</body>
+</html>

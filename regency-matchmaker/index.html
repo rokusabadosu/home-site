@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Regency Matchmaker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="game">
+  <div id="graphWrap">
+    <svg id="graph"></svg>
+  </div>
+
+  <!-- HUD overlay — top left -->
+  <div id="hud-box">
+    <button class="panel-close hud-help-btn" onclick="toggleHudHelp(event)">?</button>
+    <button class="panel-close hud-reset-btn" onclick="if(confirm('Start a new game? All progress will be lost.')) resetGame()" title="New Game">↺</button>
+    <div class="hud-title">✦ Regency Matchmaker ✦</div>
+    <div class="hud-stats">
+      <div class="stat">Season of <b id="sSeason">1811</b></div>
+      <div class="stat"><b id="sBallName">The Opening Ball</b> (<span id="sBall">1</span>/6)</div>
+      <div class="stat">Actions <b id="sActions">5</b></div>
+    </div>
+    <div class="hud-stats hud-scores">
+      <div class="stat score">Reputation <b id="sScore">10</b></div>
+      <div class="stat rival1-stat">Lady P. <b id="sRival1">0</b></div>
+      <div class="stat rival2-stat">Mrs. H. <b id="sRival2">0</b></div>
+    </div>
+    <button id="nbb" onclick="nextBall()">⟶ Proceed to Next Ball</button>
+  </div>
+
+
+  <!-- Floating speech notifications -->
+  <div id="notif-container"></div>
+</div>
+
+<!-- Gossip newsletter overlay (between balls) -->
+<div id="newsletter-overlay" class="hidden">
+  <div id="newsletter-card">
+    <div class="nl-masthead">Regency Matchmaker</div>
+    <div class="nl-ornament">— ✦ —</div>
+    <div class="nl-issue" id="nl-issue"></div>
+    <div class="nl-body" id="nl-body"></div>
+    <button class="nl-btn" id="nl-btn">Attend the Ball</button>
+  </div>
+</div>
+
+<!-- Season end overlay -->
+<div id="overlay" class="hidden">
+  <div class="oc" id="overlayCard"></div>
+</div>
+
+
+<!-- Character action popup -->
+<div id="char-popup" class="hidden"></div>
+
+<!-- Action help tooltip -->
+<div id="action-help" class="hidden"></div>
+
+<!-- HUD rules tooltip -->
+<div id="hud-help" class="hidden"></div>
+
+<!-- Introduce-mode hint -->
+<div id="intro-hint" class="hidden">🤝 Click another character to introduce them — <button class="hint-cancel" onclick="cancelMode()">Cancel</button></div>
+
+<div id="tip" class="hidden"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

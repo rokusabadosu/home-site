@@ -60,13 +60,13 @@ const ACTION_HELP = {
     body: 'Reveals one hidden attribute of this character — their personality, an interest, or what they find attractive in a partner. Also carries a 50% chance of revealing their Personality. If they love Conversation, their Personality is always revealed and their love of Conversation is uncovered.',
     limit: 'Can only be used once per ball per character.' },
   intro:    { title: 'Introduce',
-    body: 'Introduces this character to another. Cross-gender introductions are claimed for Reputation — if the pair marries at season\'s end, you gain +1 Reputation. Same-gender pairings form a friendship instead.',
+    body: 'Introduces this character to another. Cross-gender introductions are claimed for Reputation — if the pair marries, you gain +1 Reputation. Same-gender pairings form a friendship instead.',
     limit: 'Each character can only be claimed in one introduction at a time. Introducing them to a new partner releases the previous claim.' },
   dance:    { title: 'Encourage to Dance',
-    body: 'Directs this character to dance with an introduced partner of the opposite sex, boosting their relationship. Bonus: +2 if each finds the other physically attractive; +2 if either enjoys Dancing.',
+    body: 'Directs this character to dance with an introduced partner of the opposite sex, boosting their relationship. Bonus: +1 for each who finds the other physically attractive (up to +2); +1 for each who enjoys Dancing (up to +2).',
     limit: 'The two characters must already have been introduced.' },
   converse: { title: 'Encourage to Converse',
-    body: 'Directs this character to have a private conversation with an introduced partner of the opposite sex, boosting their relationship. Bonus: +2 if each is drawn to the other\'s personality; +2 if either enjoys Conversation.',
+    body: 'Directs this character to have a private conversation with an introduced partner of the opposite sex, boosting their relationship. Bonus: +1 for each who is drawn to the other\'s personality (up to +2); +1 for each who enjoys Conversation (up to +2).',
     limit: 'The two characters must already have been introduced.' },
   gossip:   { title: 'Gossip',
     body: 'Draws this character aside for the latest whispers. Reveals a random hidden attribute of two other characters at court. If this character has an interest in Gossip, reveals three instead.',
@@ -86,8 +86,14 @@ const ACTION_HELP = {
 };
 
 const MAX_SCORE = 30;   // relationship score ceiling
-const ACTIONS_PER_BALL = 7;
+const ACTIONS_PER_BALL  = 6;
+const BALLS_PER_SEASON  = 6;
 const actKey = (action, id) => `${action}:${id}`;
+
+// ── Attribute key constants (avoids magic string repetition) ──
+const RV_KEYS   = ['pers', 'i0', 'i1', 'i2', 'ap', 'apr'];  // all hidden attr rv keys
+const INT_KEYS  = ['i0', 'i1', 'i2'];                         // interest rv keys
+const SEEK_KEYS = ['pers', 'ap', 'apr'];                       // seek-a-confidence keys
 
 // ═══════════════════════════════════════════════════════════
 //  HELPERS
@@ -211,8 +217,8 @@ function genSeason() {
   const gns  = shuf(GENT_FIRST).slice(0, 5);
   const sns  = shuf(SURNAMES);
   const tits = shuf(GENT_TITLES);
-  const ladyPortraits = rN(Array.from({length: 10}, (_, i) => i), 5);
-  const gentPortraits = rN(Array.from({length: 10}, (_, i) => i), 5);
+  const ladyPortraits = rN(Array.from({length: 15}, (_, i) => i), 5);
+  const gentPortraits = rN(Array.from({length: 15}, (_, i) => i), 5);
   const chars = [];
   lns.forEach((fn, i) => chars.push(genChar('f', i, fn, sns[i]   || r1(SURNAMES), 'Miss',                  ladyPortraits[i])));
   gns.forEach((fn, i) => chars.push(genChar('m', i, fn, sns[5+i] || r1(SURNAMES), tits[i % tits.length], gentPortraits[i])));
@@ -239,7 +245,7 @@ function setHighlights(entries) {
 }
 
 function setBackground() {
-  const n = Math.floor(Math.random() * 3) + 1;
+  const n = Math.floor(Math.random() * 9) + 1;
   document.getElementById('graphWrap').style.backgroundImage =
     `url('images/ballroom-background${String(n).padStart(2,'0')}.png')`;
 }
@@ -272,16 +278,16 @@ function buildNextSeasonCast(prevG) {
   const returningGents  = unengaged.filter(c => c.gender === 'm');
   [...returningLadies, ...returningGents].forEach(c => { c.seasons = (c.seasons || 1) + 1; });
 
-  // Cap total characters at 14; split available new slots evenly between genders
+  // Cap total characters at 12; split available new slots evenly between genders
   const totalReturning = returningLadies.length + returningGents.length;
-  const totalNew       = Math.min(8, Math.max(0, 14 - totalReturning));
+  const totalNew       = Math.min(8, Math.max(0, 12 - totalReturning));
   const newLadyCount   = Math.floor(totalNew / 2);
   const newGentCount   = totalNew - newLadyCount;
 
   // Prefer portrait indices not already used by returning characters
   const usedLadyPortraits = new Set(returningLadies.map(c => c.portraitIdx));
   const usedGentPortraits = new Set(returningGents.map(c => c.portraitIdx));
-  const allPortraitIdxs   = Array.from({length: 10}, (_, i) => i);
+  const allPortraitIdxs   = Array.from({length: 15}, (_, i) => i);
   const freeLadyPortraits = allPortraitIdxs.filter(i => !usedLadyPortraits.has(i));
   const freeGentPortraits = allPortraitIdxs.filter(i => !usedGentPortraits.has(i));
   const newLadyPortraits  = rN(freeLadyPortraits.length >= newLadyCount ? freeLadyPortraits : allPortraitIdxs, newLadyCount);
@@ -343,11 +349,11 @@ function newSeason() {
     gossipCount:  0,
     rumourCount:  0,
     scandalCount: 0,
-    rivalChance: { rival1: 0.04, rival2: 0.04 },
+    rivalChance: { rival1: 0.03, rival2: 0.03 },
     highlights: [],
     introThisBall: [],
     newMarriages: [],
-    ballNames: rN(SURNAMES, 6).map(s => `The ${s} Ball`),
+    ballNames: rN(SURNAMES, BALLS_PER_SEASON).map(s => `The ${s} Ball`),
     prevScores: {},
     sel:       null,
     mode:      null,
@@ -356,6 +362,7 @@ function newSeason() {
     returningLadies, returningGents, newLadies, newGents,
   };
   buildCharMap();
+  rebuildEngaged();
   createInitialFriendships();
   addLog(`⚜️  The Season of ${seasonYear()} begins. Society assembles.`, 'imp');
   setBackground();
@@ -384,7 +391,15 @@ function conns(id) {
 }
 
 const canAct    = () => G.actions > 0 && G.phase === 'playing';
-const isEngaged = id => Object.entries(G.rels).some(([k, r]) => r.married && k.split(':').includes(id));
+let engagedSet = new Set();
+function rebuildEngaged() {
+  engagedSet = new Set();
+  if (!G) return;
+  Object.entries(G.rels).forEach(([k, r]) => {
+    if (r.married) k.split(':').forEach(id => engagedSet.add(id));
+  });
+}
+const isEngaged = id => engagedSet.has(id);
 
 function spend() {
   G.actions--;
@@ -399,7 +414,7 @@ function maybeRivalActs() {
   if (G.phase !== 'playing') return;
   RIVALS.forEach(rival => {
     const chance = G.rivalChance[rival.id];
-    G.rivalChance[rival.id] = Math.min(1, chance + 0.04);
+    G.rivalChance[rival.id] = Math.min(1, chance + 0.03);
     if (Math.random() < chance) {
       rivalIntroduce(rival);
       G.rivalChance[rival.id] = 0.04;
@@ -634,7 +649,7 @@ function doChat(id) {
     return;
   }
   const c = getC(id);
-  const hiddenKeys = ['pers', 'i0', 'i1', 'i2', 'ap', 'apr'].filter(k => !c.rv[k]);
+  const hiddenKeys = RV_KEYS.filter(k => !c.rv[k]);
   if (!hiddenKeys.length) {
     addLog(`There is nothing more to learn from ${c.shortDisplay} — all is already known.`);
     return;
@@ -647,7 +662,7 @@ function doChat(id) {
   const lovesConversation = c.interests.some(i => i.id === 'conversation');
   if (lovesConversation) {
     const convIdx = c.interests.findIndex(i => i.id === 'conversation');
-    const convKey = ['i0', 'i1', 'i2'][convIdx];
+    const convKey = INT_KEYS[convIdx];
     if (!c.rv[convKey]) {
       c.rv[convKey] = true;
       addLog(`${c.shortDisplay}'s evident pleasure in the exchange betrays a love of Conversation 🗣️.`, 'imp', id);
@@ -737,7 +752,7 @@ function doGossip(charId) {
   addLog(`You draw ${ch.shortDisplay} aside for the latest whispers…`);
   const gossipHl = [];
   rN(others, count).forEach(ab => {
-    const hiddenKeys = ['pers', 'i0', 'i1', 'i2', 'ap', 'apr'].filter(k => !ab.rv[k]);
+    const hiddenKeys = RV_KEYS.filter(k => !ab.rv[k]);
     if (!hiddenKeys.length) {
       addLog(`${ab.shortDisplay} holds no further secrets — all is already known.`);
       return;
@@ -749,7 +764,7 @@ function doGossip(charId) {
   // If the character loves gossip and that interest isn't yet revealed, reveal it now
   if (lovesGossip) {
     const gossipIdx = ch.interests.findIndex(i => i.id === 'gossip');
-    const iKey = ['i0', 'i1', 'i2'][gossipIdx];
+    const iKey = INT_KEYS[gossipIdx];
     if (!ch.rv[iKey]) {
       ch.rv[iKey] = true;
       addLog(`${ch.shortDisplay}'s delight in the exchange is unmistakable — their love of Gossip 🤫 is now known to you.`, 'imp', charId);
@@ -891,7 +906,7 @@ function doDiscuss(charId) {
   if (!revealedInts.length) { addLog(`No interests of ${ch.shortDisplay} are yet known.`); return; }
 
   const discussHl = [];
-  const iKeys = ['i0', 'i1', 'i2'];
+  const iKeys = INT_KEYS;
 
   revealedInts.forEach(({ interest, key }) => {
     discussHl.push({ charId, key });
@@ -946,7 +961,7 @@ function doSeek(charId) {
   }
 
   const target = r1(qualifyingFriends);
-  const hiddenKeys = ['pers', 'ap', 'apr'].filter(k => !target.rv[k]);
+  const hiddenKeys = SEEK_KEYS.filter(k => !target.rv[k]);
 
   if (!hiddenKeys.length) {
     addLog(`${ch.shortDisplay} speaks warmly of ${target.shortDisplay}, but reveals nothing you do not already know.`);
@@ -995,7 +1010,7 @@ function nextBall() {
   Object.entries(G.rels).forEach(([k, r]) => { G.prevScores[k] = r.score; });
   naturalDrift();
   G.newMarriages = processMidSeasonMarriages();
-  if (G.ball >= 6) { endSeason(); return; }
+  if (G.ball >= BALLS_PER_SEASON) { processEndSeasonDriftEngagements(); endSeason(); return; }
   showNewsletter();
 }
 
@@ -1334,7 +1349,51 @@ function processMidSeasonMarriages() {
   });
 
   if (newMarriages.length) updHUD();
+  rebuildEngaged();
   return newMarriages;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  END-OF-SEASON DRIFT ENGAGEMENTS (drift >= 7 on final ball)
+// ═══════════════════════════════════════════════════════════
+function processEndSeasonDriftEngagements() {
+  const prev = G.prevScores || {};
+  const taken = new Set();
+
+  // Seed taken with characters already married this season
+  Object.entries(G.rels).forEach(([k, r]) => {
+    if (r.married) k.split(':').forEach(id => taken.add(id));
+  });
+
+  // Find unengaged romantic couples whose drift on this ball was >= 7,
+  // sorted by post-drift score descending so the strongest connection wins
+  const candidates = Object.entries(G.rels)
+    .map(([k, r]) => {
+      const [id1, id2] = k.split(':');
+      const c1 = getC(id1), c2 = getC(id2);
+      if (!c1 || !c2 || !relIsRomantic(c1, c2, r) || r.married) return null;
+      const drift = (k in prev) ? r.score - prev[k] : 0;
+      if (drift < 7) return null;
+      return { k, r, c1, c2 };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.r.score - a.r.score);
+
+  candidates.forEach(({ k, r, c1, c2 }) => {
+    const [id1, id2] = k.split(':');
+    if (taken.has(id1) || taken.has(id2)) return;
+    const lady = c1.gender === 'f' ? c1 : c2;
+    const gent = c1.gender === 'm' ? c1 : c2;
+    r.married = true;
+    taken.add(id1); taken.add(id2);
+    convertOtherRomancesToFriendships(k, [id1, id2]);
+    if (r.claimed)                 P.reputation++;
+    else if (r.rival === 'rival1') P.rivals.rival1++;
+    else if (r.rival === 'rival2') P.rivals.rival2++;
+    G.newMarriages.push({ k, lady, gent, claimed: r.claimed, rival: r.rival || null });
+  });
+
+  if (candidates.length) { rebuildEngaged(); updHUD(); }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1398,9 +1457,12 @@ function showEndOverlay() {
         <div class="standing-row rival2-row">⚔️ Mrs. Hartwick &nbsp;<span class="standing-score">${P.rivals.rival2}</span></div>
       </div>
     </div>
-    <button class="nl-btn" onclick="newSeason()">Begin a New Season</button>
-    <button class="nl-btn" style="margin-top:8px;background:linear-gradient(135deg,#8b4010,#5c2a08)" onclick="resetGame()">↺ New Game</button>`;
+    <button class="nl-btn" data-act="newseason">Begin a New Season</button>
+    <button class="nl-btn" style="margin-top:8px;background:linear-gradient(135deg,#8b4010,#5c2a08)" data-act="reset">↺ New Game</button>`;
   document.getElementById('overlay').classList.remove('hidden');
+  const card = document.getElementById('overlayCard');
+  card.querySelector('[data-act="newseason"]').addEventListener('click', newSeason);
+  card.querySelector('[data-act="reset"]').addEventListener('click', resetGame);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1882,9 +1944,8 @@ function clearSel() {
 function startMode(id, mode, hintText) {
   document.getElementById('char-popup').classList.add('hidden');
   G.sel = id; G.mode = mode;
-  const hint = document.getElementById('intro-hint');
-  hint.innerHTML = `${hintText} — <button class="hint-cancel" onclick="cancelMode()">Cancel</button>`;
-  hint.classList.remove('hidden');
+  document.getElementById('hint-msg').textContent = hintText;
+  document.getElementById('intro-hint').classList.remove('hidden');
   renderGraph();
 }
 
@@ -1968,17 +2029,20 @@ function toggleHudHelp(event) {
   const el = document.getElementById('hud-help');
   if (!el.classList.contains('hidden')) { el.classList.add('hidden'); return; }
   el.innerHTML = `
-    <button class="panel-close" onclick="document.getElementById('hud-help').classList.add('hidden');event.stopPropagation()">✕</button>
+    <button class="panel-close" id="hud-help-close">✕</button>
     <h3>How to Play</h3>
     <p>You are a matchmaker with <strong>Actions</strong> to spend each ball. Use them to learn about characters and bring suitable partners together.</p>
     <p>When a couple you introduced marries, you gain +1 Reputation. Rivals Lady Pendleton and Mrs. Hartwick will also be making introductions — credit goes to whoever introduced the pair first. Causing scandals will cost you −1 Reputation each time.</p>
     <p><strong>Stats</strong><br>
-    <em>Actions</em> — how many actions remain this ball (7 per ball).</p>
+    <em>Actions</em> — how many actions remain this ball (6 per ball).</p>
     <p><strong>Characters</strong><br>
     Click any character to open their action menu. Each action can only be performed once per character per ball. Click the <strong>?</strong> beside any action for a full explanation of what it does.</p>
     <p><strong>Between Balls</strong><br>
-    Relationships drift naturally — compatible pairs grow closer, others may cool. Pairs with a very strong attachment may even marry mid-season.</p>`;
+    Relationships drift naturally — compatible pairs grow closer, others may cool. Pairs who reach the highest attachment may marry mid-season. At season's end, any couple whose feelings surged especially strongly at the final ball may also become engaged.</p>`;
   el.classList.remove('hidden');
+  document.getElementById('hud-help-close').addEventListener('click', e => {
+    el.classList.add('hidden'); e.stopPropagation();
+  });
 }
 
 function showActionHelp(btn, event) {
@@ -1987,11 +2051,14 @@ function showActionHelp(btn, event) {
   const note = btn.dataset.note || '';
   const h = ACTION_HELP[key];
   const el = document.getElementById('action-help');
-  let html = `<button class="panel-close" onclick="document.getElementById('action-help').classList.add('hidden');event.stopPropagation()">✕</button><span class="ah-title">${h.title}</span><p>${h.body}</p>`;
+  let html = `<button class="panel-close" id="action-help-close">✕</button><span class="ah-title">${h.title}</span><p>${h.body}</p>`;
   if (h.limit) html += `<p style="color:rgba(196,154,46,.55);font-style:italic">${h.limit}</p>`;
   if (note)    html += `<p class="ah-note">${note}</p>`;
   el.innerHTML = html;
   el.classList.remove('hidden');
+  document.getElementById('action-help-close').addEventListener('click', e => {
+    el.classList.add('hidden'); e.stopPropagation();
+  });
   const rect = event.target.getBoundingClientRect();
   const ew = 210;
   let x = rect.left - ew - 6;
@@ -2017,29 +2084,35 @@ function showPopup(id) {
   const crossGenderIntros = charConns.filter(({ c: ch }) => ch.gender !== c.gender);
   const seekFriends       = charConns.filter(({ c: oc, r }) => !relIsRomantic(c, oc, r) && r.score >= 10);
 
-  const ar = (btn, key, n = '') =>
-    `<div class="action-row">${btn}<button class="help-icon" data-key="${key}" data-note="${n.replace(/"/g, '&quot;')}" onclick="showActionHelp(this,event)" tabindex="-1">?</button></div>`;
+  const engaged = isEngaged(id);
 
-  let h = `<button class="panel-close" onclick="hidePopup()">✕</button><div class="popup-name">${c.fullName}</div>`;
+  const ar = (btn, key, n = '') =>
+    `<div class="action-row">${btn}<button class="help-icon" data-key="${key}" data-note="${n.replace(/"/g, '&quot;')}" tabindex="-1">?</button></div>`;
+
+  let h = `<button class="panel-close" data-act="close">✕</button><div class="popup-name">${c.fullName}</div>`;
 
   const chatUsed = acted('chat');
-  h += ar(`<button class="abtn" onclick="doChat('${id}')" ${!cs || chatUsed ? 'disabled' : ''}>
+  h += ar(`<button class="abtn" data-act="chat" ${!cs || chatUsed ? 'disabled' : ''}>
     💬 Chat${chatUsed ? ' <small style="opacity:.45">(done this ball)</small>' : ''}</button>`,
     'chat', note('chat', 'chatted'));
 
   const introUsed = acted('intro');
-  h += ar(`<button class="abtn" onclick="startIntro('${id}')" ${!cs || introUsed ? 'disabled' : ''}>
-    🤝 Introduce to…${introUsed ? ' <small style="opacity:.45">(done this ball)</small>' : ''}</button>`,
-    'intro', note('intro', 'made an introduction'));
+  const introDisabled = !cs || introUsed || engaged;
+  const introNote = engaged
+    ? `${c.shortDisplay} is already engaged this season.`
+    : note('intro', 'made an introduction');
+  h += ar(`<button class="abtn" data-act="intro" ${introDisabled ? 'disabled' : ''}>
+    🤝 Introduce to…${introUsed ? ' <small style="opacity:.45">(done this ball)</small>' : ''}${engaged ? ' <small style="opacity:.45">(engaged)</small>' : ''}</button>`,
+    'intro', introNote);
 
   const gossipUsed = acted('gossip');
-  h += ar(`<button class="abtn" onclick="doGossip('${id}')" ${!cs || gossipUsed ? 'disabled' : ''}>
+  h += ar(`<button class="abtn" data-act="gossip" ${!cs || gossipUsed ? 'disabled' : ''}>
     🤫 Gossip${gossipUsed ? ' <small style="opacity:.45">(done this ball)</small>' : ''}</button>`,
     'gossip', note('gossip', 'shared gossip'));
 
   const discussUsed = acted('discuss');
   if (knownInts.length) {
-    h += ar(`<button class="abtn" onclick="doDiscuss('${id}')" ${!cs || discussUsed ? 'disabled' : ''}>
+    h += ar(`<button class="abtn" data-act="discuss" ${!cs || discussUsed ? 'disabled' : ''}>
       🔍 Discuss interests${discussUsed ? ' <small style="opacity:.45">(done this ball)</small>' : ''}</button>`,
       'discuss', note('discuss', 'discussed their interests'));
   } else {
@@ -2049,7 +2122,7 @@ function showPopup(id) {
 
   const enquireUsed = acted('enquire');
   if (charConns.length) {
-    h += ar(`<button class="abtn" onclick="doEnquire('${id}')" ${!cs || enquireUsed ? 'disabled' : ''}>
+    h += ar(`<button class="abtn" data-act="enquire" ${!cs || enquireUsed ? 'disabled' : ''}>
       👥 Sound out their circle${enquireUsed ? ' <small style="opacity:.45">(done this ball)</small>' : ''}</button>`,
       'enquire', note('enquire', 'spoken of their circle'));
   } else {
@@ -2059,7 +2132,7 @@ function showPopup(id) {
 
   const seekUsed = acted('seek');
   if (seekFriends.length) {
-    h += ar(`<button class="abtn" onclick="doSeek('${id}')" ${!cs || seekUsed ? 'disabled' : ''}>
+    h += ar(`<button class="abtn" data-act="seek" ${!cs || seekUsed ? 'disabled' : ''}>
       🤫 Seek a confidence${seekUsed ? ' <small style="opacity:.45">(done this ball)</small>' : ''}</button>`,
       'seek', note('seek', 'confided'));
   } else {
@@ -2070,10 +2143,10 @@ function showPopup(id) {
   const danceUsed = acted('dance');
   const converseUsed = acted('converse');
   if (crossGenderIntros.length) {
-    h += ar(`<button class="abtn" onclick="startDance('${id}')" ${!cs || danceUsed ? 'disabled' : ''}>
+    h += ar(`<button class="abtn" data-act="dance" ${!cs || danceUsed ? 'disabled' : ''}>
       💃 Encourage to dance…${danceUsed ? ' <small style="opacity:.45">(done this ball)</small>' : ''}</button>`,
       'dance', note('dance', 'danced'));
-    h += ar(`<button class="abtn" onclick="startConverse('${id}')" ${!cs || converseUsed ? 'disabled' : ''}>
+    h += ar(`<button class="abtn" data-act="converse" ${!cs || converseUsed ? 'disabled' : ''}>
       💬 Encourage to converse…${converseUsed ? ' <small style="opacity:.45">(done this ball)</small>' : ''}</button>`,
       'converse', note('converse', 'conversed'));
   } else {
@@ -2085,7 +2158,7 @@ function showPopup(id) {
 
   const rumourUsed = acted('rumour');
   if (charConns.length) {
-    h += ar(`<button class="abtn" onclick="startRumour('${id}')" ${!cs || rumourUsed ? 'disabled' : ''}>
+    h += ar(`<button class="abtn" data-act="rumour" ${!cs || rumourUsed ? 'disabled' : ''}>
       🗣️ Spread a rumour…${rumourUsed ? ' <small style="opacity:.45">(done this ball)</small>' : ''}</button>`,
       'rumour', note('rumour', 'spread a rumour'));
   } else {
@@ -2095,6 +2168,28 @@ function showPopup(id) {
 
   const popup = document.getElementById('char-popup');
   popup.innerHTML = h;
+
+  // Wire up action buttons via data-act (no inline onclick)
+  popup.querySelector('[data-act="close"]').addEventListener('click', hidePopup);
+  const popupActions = {
+    chat:     () => doChat(id),
+    intro:    () => startIntro(id),
+    gossip:   () => doGossip(id),
+    discuss:  () => doDiscuss(id),
+    enquire:  () => doEnquire(id),
+    seek:     () => doSeek(id),
+    dance:    () => startDance(id),
+    converse: () => startConverse(id),
+    rumour:   () => startRumour(id),
+  };
+  popup.querySelectorAll('[data-act]:not([data-act="close"])').forEach(btn => {
+    const fn = popupActions[btn.dataset.act];
+    if (fn) btn.addEventListener('click', fn);
+  });
+  popup.querySelectorAll('.help-icon').forEach(btn => {
+    btn.addEventListener('click', e => showActionHelp(btn, e));
+  });
+
   popup.classList.remove('hidden');
 
   // Position near node, keeping within viewport
@@ -2140,6 +2235,7 @@ function render() { renderGraph(); updHUD(); }
 function updHUD() {
   document.getElementById('sSeason').textContent    = seasonYear();
   document.getElementById('sBall').textContent      = G.ball;
+  document.getElementById('sBallTotal').textContent = BALLS_PER_SEASON;
   document.getElementById('sBallName').textContent  = currentBallName();
   document.getElementById('sActions').textContent   = G.actions;
   document.getElementById('sScore').textContent   = P.reputation;
@@ -2301,6 +2397,7 @@ function loadState() {
     Object.assign(P.rivals, saved.P.rivals);
     if (P.rivals.rival1 < 10) P.rivals.rival1 += 10;
     if (P.rivals.rival2 < 10) P.rivals.rival2 += 10;
+    rebuildEngaged();
     return true;
   } catch { return false; }
 }
@@ -2316,10 +2413,34 @@ window.addEventListener('resize', () => {
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') cancelMode();
+  if (e.key === 'Escape') {
+    // Close panels in order: action help → hud help → char popup → mode
+    const ah = document.getElementById('action-help');
+    const hh = document.getElementById('hud-help');
+    const popup = document.getElementById('char-popup');
+    if (ah && !ah.classList.contains('hidden'))    { ah.classList.add('hidden'); return; }
+    if (hh && !hh.classList.contains('hidden'))    { hh.classList.add('hidden'); return; }
+    if (popup && !popup.classList.contains('hidden')) { hidePopup(); return; }
+    cancelMode();
+  }
+  if (e.key === 'Enter') {
+    // Dismiss newsletter with Enter
+    const nl = document.getElementById('newsletter-overlay');
+    if (nl && !nl.classList.contains('hidden')) { document.getElementById('nl-btn').click(); return; }
+    // Advance ball when all actions are spent
+    if (G && G.actions === 0 && G.phase === 'playing') { nextBall(); }
+  }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Wire up static HTML button handlers (no inline onclick in HTML)
+  document.getElementById('hud-help-btn').addEventListener('click', e => { e.stopPropagation(); toggleHudHelp(e); });
+  document.getElementById('hud-reset-btn').addEventListener('click', () => {
+    if (confirm('Start a new game? All progress will be lost.')) resetGame();
+  });
+  document.getElementById('nbb').addEventListener('click', nextBall);
+  document.querySelector('#intro-hint .hint-cancel').addEventListener('click', cancelMode);
+
   if (loadState()) {
     buildCharMap();
     setBackground();

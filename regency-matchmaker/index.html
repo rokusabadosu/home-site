@@ -16,12 +16,12 @@
 
   <!-- HUD overlay — top left -->
   <div id="hud-box">
-    <button class="panel-close hud-help-btn" onclick="toggleHudHelp(event)">?</button>
-    <button class="panel-close hud-reset-btn" onclick="if(confirm('Start a new game? All progress will be lost.')) resetGame()" title="New Game">↺</button>
+    <button class="panel-close hud-help-btn" id="hud-help-btn">?</button>
+    <button class="panel-close hud-reset-btn" id="hud-reset-btn" title="New Game">↺</button>
     <div class="hud-title">✦ Regency Matchmaker ✦</div>
     <div class="hud-stats">
       <div class="stat">Season of <b id="sSeason">1811</b></div>
-      <div class="stat"><b id="sBallName">The Opening Ball</b> (<span id="sBall">1</span>/6)</div>
+      <div class="stat"><b id="sBallName">The Opening Ball</b> (<span id="sBall">1</span>/<span id="sBallTotal">6</span>)</div>
       <div class="stat">Actions <b id="sActions">5</b></div>
     </div>
     <div class="hud-stats hud-scores">
@@ -29,7 +29,7 @@
       <div class="stat rival1-stat">Lady P. <b id="sRival1">0</b></div>
       <div class="stat rival2-stat">Mrs. H. <b id="sRival2">0</b></div>
     </div>
-    <button id="nbb" onclick="nextBall()">⟶ Proceed to Next Ball</button>
+    <button id="nbb">⟶ Proceed to Next Ball</button>
   </div>
 
 
@@ -64,7 +64,7 @@
 <div id="hud-help" class="hidden"></div>
 
 <!-- Introduce-mode hint -->
-<div id="intro-hint" class="hidden">🤝 Click another character to introduce them — <button class="hint-cancel" onclick="cancelMode()">Cancel</button></div>
+<div id="intro-hint" class="hidden"><span id="hint-msg"></span> — <button class="hint-cancel">Cancel</button></div>
 
 <div id="tip" class="hidden"></div>
 
